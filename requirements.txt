@@ -1,0 +1,24 @@
+#hyplan depedencies
+concurrent
+datetime
+geopandas
+logging
+math
+numba
+numpy
+osgeo
+pandas
+pint
+pydantic
+pydantic_pint
+pymap3d
+pyproj
+random
+requests
+rtree
+shapely
+shutil
+simplekml
+tempfile
+time
+typing
