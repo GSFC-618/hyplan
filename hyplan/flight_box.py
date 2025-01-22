@@ -6,7 +6,7 @@ import logging
 
 from . import flight_line
 from .units import ureg, altitude_to_flight_level
-from h.geometry import wrap_to_180, rotated_rectangle, minimum_rotated_rectangle, buffer_polygon_along_azimuth, _validate_polygon
+from .geometry import wrap_to_180, rotated_rectangle, minimum_rotated_rectangle, buffer_polygon_along_azimuth, _validate_polygon
 
 
 # Set up logging
