@@ -4,9 +4,10 @@ import logging
 from shapely.geometry import Point
 from shapely.ops import nearest_points
 from typing import List, Union
-from hyplan.units import convert_distance
-from hyplan.download import download_file
-from hyplan.geometry import haversine
+
+from .units import convert_distance
+from .download import download_file
+from .geometry import haversine
 
 __all__ = [
     "Airport", "initialize_data", "find_nearest_airport", "airports_within_radius",

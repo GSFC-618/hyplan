@@ -4,9 +4,10 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from pymap3d import los
-from hyplan.sun import sunpos
-from hyplan.flight_line import FlightLine
-from hyplan.sensors import LineScanner
+
+from .sun import sunpos
+from .flight_line import FlightLine
+from .sensors import LineScanner
 
 def calculate_target_and_glint_vectorized(
     sensor_lat, sensor_lon, sensor_alt,

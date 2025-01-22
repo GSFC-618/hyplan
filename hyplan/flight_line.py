@@ -2,12 +2,13 @@ import logging
 from shapely.geometry import LineString, Polygon, MultiPolygon, MultiLineString
 from pint import Quantity
 from typing import Optional, List, Dict, Union, Tuple
-from hyplan.units import ureg
-from hyplan.geometry import wrap_to_180
 import pymap3d
 import pymap3d.vincenty
 import geopandas as gpd
 import numpy as np
+
+from .units import ureg
+from .geometry import wrap_to_180
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

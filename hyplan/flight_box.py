@@ -4,9 +4,9 @@ from typing import Optional, List, Callable, Dict, Union
 from shapely.geometry import Polygon
 import logging
 
-from hyplan import flight_line
-from hyplan.units import ureg, altitude_to_flight_level
-from hyplan.geometry import wrap_to_180, rotated_rectangle, minimum_rotated_rectangle, buffer_polygon_along_azimuth, _validate_polygon
+from . import flight_line
+from .units import ureg, altitude_to_flight_level
+from h.geometry import wrap_to_180, rotated_rectangle, minimum_rotated_rectangle, buffer_polygon_along_azimuth, _validate_polygon
 
 
 # Set up logging

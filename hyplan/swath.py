@@ -2,9 +2,10 @@ import numpy as np
 import simplekml
 from shapely.geometry import Polygon
 import pymap3d.vincenty
-from hyplan.flight_line import FlightLine
-from hyplan.sensors import LineScanner
-from hyplan.terrain import ray_terrain_intersection
+
+from .flight_line import FlightLine
+from .sensors import LineScanner
+from .terrain import ray_terrain_intersection
 
 def generate_swath_polygon(
     flight_line: FlightLine,

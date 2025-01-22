@@ -23,7 +23,8 @@
 
 import os, sys, argparse, re, functools
 import numpy as np
-import time,datetime
+import time
+import datetime
 
 try:
     #scipy is required for numba's linear algebra routines to work

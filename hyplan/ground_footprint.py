@@ -2,8 +2,9 @@ from typing import List, Tuple
 from shapely.geometry import Point
 from pint import Quantity
 import numpy as np
-from hyplan.terrain import ray_terrain_intersection
-from hyplan.units import ureg
+
+from .terrain import ray_terrain_intersection
+from .units import ureg
 
 def footprint_corners(
     lat: float, 

@@ -4,7 +4,8 @@ from pydantic_pint import PydanticPintQuantity
 from pint import Quantity
 import numpy as np
 from typing import Annotated
-from hyplan.units import ureg
+
+from .units import ureg
 
 class Sensor(BaseModel):
     """Base class to represent a generic sensor."""

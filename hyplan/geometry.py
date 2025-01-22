@@ -3,7 +3,6 @@ import math
 import random
 import logging
 from typing import Optional, Tuple, Callable
-
 from shapely.affinity import affine_transform, translate
 from shapely.geometry import Point, Polygon, MultiPolygon
 from shapely.ops import triangulate, transform, unary_union

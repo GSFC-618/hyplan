@@ -1,5 +1,4 @@
 #hyplan depedencies
-concurrent
 datetime
 geopandas
 logging

@@ -10,7 +10,8 @@ from osgeo import gdal
 from typing import List, Tuple
 import pymap3d.los
 import pymap3d.aer
-from hyplan.download import download_file
+
+from .download import download_file
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
