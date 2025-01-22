@@ -6,11 +6,11 @@ from hyplan.terrain import ray_terrain_intersection
 from hyplan.units import ureg
 
 def footprint_corners(
-    lat: Quantity, 
-    lon: Quantity, 
-    altitude: Quantity, 
-    fov_x: Quantity, 
-    fov_y: Quantity, 
+    lat: float, 
+    lon: float, 
+    altitude: float, 
+    fov_x: float, 
+    fov_y: float, 
     dem_file: str
 ) -> List[Tuple[Quantity, Quantity, Quantity]]:
     """
