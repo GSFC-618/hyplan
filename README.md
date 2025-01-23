@@ -1,6 +1,6 @@
 # Project Overview
 
-HyPlan is an open-source Python library containing tools for planning airborne remote sensing campaigns. 
+HyPlan is an open-source Python library for planning airborne remote sensing campaigns. 
 
 ---
 
@@ -8,7 +8,7 @@ HyPlan is an open-source Python library containing tools for planning airborne r
 
 ### Core Modules
 
-- **geometry.py**: Functions for geometric calculations essential to flight planning and sensor modeling.
+- **geometry.py**: Utility functions geometric calculations essential to flight planning and sensor modeling.
 - **glint.py**: Functions to predict solar glint angles based on sensor view angles and solar position.
 - **ground_footprint.py**: Functions to calculate ground footprint of frame camera sensors based on flight altitude and field of view.
 - **flight_line.py**: Functions to generate and modify flight lines.
