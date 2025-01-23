@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timezone
 from hyplan.flight_line import FlightLine
 from hyplan.sensors import AVIRIS3
-from hyplan.swath import generate_swath_polygon
 from hyplan.glint import calculate_target_and_glint_vectorized, compute_glint_vectorized
 from hyplan.units import ureg
 from shapely.geometry import Polygon
+from hyplan.swath import generate_swath_polygon
+
 
 #%% Example Inputs for calculate_target_and_glint_vectorized
 
@@ -46,7 +47,7 @@ print(f"Glint Angles: {results[2]}")
 altitude = ureg.Quantity(5000, "meter")
 lat0 = 9.5  # Center latitude
 lon0 = -84.75  # Center longitude
-azimuth = 135.0  # Azimuth in degrees
+azimuth = 0.0  # Azimuth in degrees
 length = ureg.Quantity(50000, "meter")  # Flight line length in meters
 
 # Create a flight line object
@@ -117,7 +118,7 @@ ax.set_xlabel("Longitude", fontsize=12)
 ax.set_ylabel("Latitude", fontsize=12)
 
 # Adjust aspect ratio to reflect real-world scales
-ratio = 0.5
+ratio = 4
 x_left, x_right = ax.get_xlim()
 y_low, y_high = ax.get_ylim()
 ax.set_aspect(abs((x_right - x_left) / (y_high - y_low)) * ratio, adjustable="box")

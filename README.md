@@ -1,54 +1,72 @@
-# HyPlan
+# Project Overview
 
-HyPlan is a Python package designed to facilitate the planning and execution of airborne remote sensing science campaigns. With tools for sensor viewing geometry calculations, flight line planning, glint analysis, and more, HyPlan helps scientists and mission planners streamline their workflow and maximize data collection efficiency.
+HyPlan is an open-source Python library containing tools for planning airborne remote sensing campaigns. 
 
-## Features
+---
 
-- **Flight Line Planning**: Tools for designing optimal flight lines based on mission parameters.
-- **Swath Calculations**: Compute sensor swath coverage considering local terrain 
-- **Glint Analysis**: Predict sun glint based on sensor characteristics, flight line geometry, and solar position 
-- **Sensor Calculations**: Calculate swath width and pixel size as a function of altitude. Calculate critical ground speed as a function of altitude and sensor frame rate.
-- **Airports**: Find nearby airports filtered by runway length/surface criteria
+## Repository Contents
+
+### Core Modules
+
+- **geometry.py**: Functions for geometric calculations essential to flight planning and sensor modeling.
+- **glint.py**: Functions to predict solar glint angles based on sensor view angles and solar position.
+- **ground_footprint.py**: Functions to calculate ground footprint of frame camera sensors based on flight altitude and field of view.
+- **flight_line.py**: Functions to generate and modify flight lines.
+- **flight_box.py**: Functions for generating multiple flight lines that cover a geographic area.
+- **terrain.py**: Functions for downloading terrain DEM data and calculating where the sensor field of view intersects the ground.
+- **sensors.py**: Defines sensor specifications and functionalities.
+- **swath.py**: Functions to compute swath coverage based on sensor field of view, altitude, and terrain elevation.
+- **units.py**: Functions for unit conversions and handling.
+- **sun.py**: Functions to calculate solar position for mission planning.
+- **airports.py**: Functions for locating and analyzing nearby airports for mission logistics.
+- **download.py**: Functions for downloading necessary datasets or dependencies.
+
+### Configuration and Setup
+
+- **setup.py**: Script for installing the package.
+- **pyproject.toml**: Build configuration file.
+- **requirements.txt**: Lists Python dependencies for the project.
+- **LICENSE.md**: Licensing details.
+
+### Documentation
+
+- **README.md**: Overview and instructions for the repository.
+
+---
 
 ## Installation
 
-To install HyPlan, use the following command:
+To set up the environment, clone the repository and install the dependencies:
 
 ```bash
-pip install hyplan
+# Clone the repository
+git clone <repository_url>
+cd <repository_name>
+
+# Install dependencies
+pip uninstall -y hyplan; pip install -e .
 ```
+
+---
 
 ## Usage
 
-### Basic Example
+### Example: Planning a Flight Mission
 
-* TODO: need to add something here
-
-## Requirements
-
-HyPlan requires Python 3.7 or higher. Dependencies are listed in `requirements.txt` and will be installed automatically.
-
-## Documentation
-
-Detailed documentation is available at [HyPlan Documentation](https://github.com/ryanpavlick/hyplan).
+Need to add material here
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome! If you have suggestions or find issues, please open an issue or submit a pull request.
 
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes and push them to your fork.
-4. Open a pull request.
+---
 
 ## License
 
-HyPlan is licensed under the Apache License 2.0. See the LICENSE file for details.
+HyPlan is licensed under the Apache License, Version 2.0. See the `LICENSE.md` file for details.
+
+---
 
 ## Contact
 
-For questions or suggestions, please contact:
-
-Ryan Pavlick  
-Email: ryan.p.pavlick@nasa.gov
-
+For inquiries or further information, please contact Ryan Pavlick (ryan.p.pavlick@nasa.gov).
