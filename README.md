@@ -8,18 +8,18 @@ HyPlan is an open-source Python library for planning airborne remote sensing cam
 
 ### Core Modules
 
-- **geometry.py**: Utility functions geometric calculations essential to flight planning and sensor modeling.
+- **airports.py**: Functions for locating and analyzing nearby airports for mission logistics.
+- **sun.py**: Functions to calculate solar position for mission planning.
 - **glint.py**: Functions to predict solar glint angles based on sensor view angles and solar position.
-- **ground_footprint.py**: Functions to calculate ground footprint of frame camera sensors based on flight altitude and field of view.
 - **flight_line.py**: Functions to generate and modify flight lines.
 - **flight_box.py**: Functions for generating multiple flight lines that cover a geographic area.
+- **sensors.py**: Defines sensor characterisitics.
 - **terrain.py**: Functions for downloading terrain DEM data and calculating where the sensor field of view intersects the ground.
-- **sensors.py**: Defines sensor specifications and functionalities.
 - **swath.py**: Functions to compute swath coverage based on sensor field of view, altitude, and terrain elevation.
-- **units.py**: Functions for unit conversions and handling.
-- **sun.py**: Functions to calculate solar position for mission planning.
-- **airports.py**: Functions for locating and analyzing nearby airports for mission logistics.
-- **download.py**: Functions for downloading necessary datasets or dependencies.
+- **geometry.py**: Utility functions for geometric calculations essential to flight planning and sensor modeling.
+- **units.py**: Utility functions for unit conversions and handling.
+- **download.py**: Utility functions for downloading necessary datasets or dependencies.
+
 
 ### Configuration and Setup
 
