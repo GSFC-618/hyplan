@@ -40,8 +40,8 @@ To set up the environment, clone the repository and install the dependencies:
 
 ```bash
 # Clone the repository
-git clone <repository_url>
-cd <repository_name>
+git clone https://github.com/ryanpavlick/hyplan
+cd hyplan
 
 # Install dependencies
 pip uninstall -y hyplan; pip install -e .
