@@ -31,7 +31,7 @@ def generate_swath_polygon(
     altitude = flight_line.altitude.magnitude
 
     # Interpolate points along the flight line
-    lats, lons, _ = flight_line.track(precision=along_precision)
+    lats, lons, _, *_ = flight_line.track(precision=along_precision)
 
     # Calculate the half-angle for port and starboard
     half_angle = sensor.half_angle.magnitude
