@@ -4,8 +4,8 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from pymap3d import los
+from sunposition import sunpos
 
-from .sun import sunpos
 from .flight_line import FlightLine
 from .sensors import LineScanner
 

@@ -16,3 +16,4 @@ rtree
 shapely
 simplekml
 typing
+tabulate
