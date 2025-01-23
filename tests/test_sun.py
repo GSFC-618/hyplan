@@ -3,7 +3,7 @@
 from hyplan.sun import solar_threshold_times
 
 # Example usage:
-df = solar_threshold_times(34.05, -118.25, '2025-03-01', '2025-05-07', [50], timezone_offset=-8)
+df = solar_threshold_times(9.62, -84.82, '2025-02-01', '2025-03-07', [35, 50], timezone_offset=-6)
 print(df.to_markdown())
 
 # %%
