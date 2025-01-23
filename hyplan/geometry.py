@@ -334,17 +334,17 @@ def buffer_polygon_along_azimuth(polygon: Polygon, along_track_distance: float, 
         wgs84_to_utm, utm_to_wgs84 = get_utm_transforms(polygon)
         polygon_utm = transform(wgs84_to_utm, polygon)
 
-        # Translate in both directions
-        translated_polygon_1 = translate_polygon(polygon_utm, across_track_distance, azimuth+90)
-        translated_polygon_2 = translate_polygon(polygon_utm, across_track_distance, azimuth-90)
-
-        # Compute convex hull of the union
-        polygon_utm = unary_union([translated_polygon_1, translated_polygon_2])
-
         translated_polygon_1 = translate_polygon(polygon_utm, along_track_distance, azimuth)
         translated_polygon_2 = translate_polygon(polygon_utm, along_track_distance, azimuth-180)
 
-        polygon_utm = unary_union([translated_polygon_1, translated_polygon_2])
+        polygon_utm_translated = unary_union([translated_polygon_1, translated_polygon_2, polygon_utm])
+
+        # Translate in both directions
+        translated_polygon_1 = translate_polygon(polygon_utm_translated, across_track_distance, azimuth+90)
+        translated_polygon_2 = translate_polygon(polygon_utm_translated, across_track_distance, azimuth-90)
+
+        # Compute the union of the translated polygons
+        polygon_utm = unary_union([translated_polygon_1, translated_polygon_2, polygon_utm_translated])
 
         buffered_polygon_wgs84 = transform(utm_to_wgs84, polygon_utm)
 
