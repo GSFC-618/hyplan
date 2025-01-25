@@ -45,16 +45,16 @@ class Airport:
         if pd.isna(longitude) or pd.isna(latitude):
             raise ValueError(f"Longitude or latitude is missing for airport {icao}")
         try:
-            self.geometry = Point(float(longitude), float(latitude))
+            self._geometry = Point(float(longitude), float(latitude))
         except (TypeError, ValueError):
             raise ValueError(f"Invalid longitude/latitude for airport {icao}: {longitude}, {latitude}")
 
         # Assign additional attributes
-        self.icao = airport_data['icao_code']
-        self.iata = airport_data['iata_code']
-        self.name = airport_data['name']
-        self.iso_country = airport_data['iso_country']
-        self.municipality = airport_data['municipality']
+        self._icao = airport_data['icao_code']
+        self._iata = airport_data['iata_code']
+        self._name = airport_data['name']
+        self._iso_country = airport_data['iso_country']
+        self._municipality = airport_data['municipality']
 
     def __repr__(self):
         return f"<Airport {self.icao} - {self.name}>"
@@ -62,12 +62,42 @@ class Airport:
     @property
     def longitude(self):
         """Longitude of the airport."""
-        return self.geometry.x
+        return self._geometry.x
 
     @property
     def latitude(self):
         """Latitude of the airport."""
-        return self.geometry.y
+        return self._geometry.y
+    
+    @property
+    def geometry(self):
+        """Latitude of the airport."""
+        return self._geometry
+    
+    @property
+    def icao_code(self):
+        """ICAO code of the airport."""
+        return self._icao
+    
+    @property
+    def iata_code(self):
+        """IATA code of the airport."""
+        return self._iata
+    
+    @property
+    def name(self):
+        """Name of the airport."""
+        return self._name
+    
+    @property
+    def country(self):
+        """ISO country code of the airport."""
+        return self._iso_country
+    
+    @property
+    def municipality(self):
+        """Municipality of the airport."""
+        return self._municipality
 
 
 def generate_geojson(filepath: str = "airports.geojson", icao_codes: Union[str, List[str]] = None) -> None:

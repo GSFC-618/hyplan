@@ -6,12 +6,13 @@ from shapely.geometry import Point, LineString
 from shapely.ops import transform
 from typing import Union
 from pymap3d.lox import meanm
+from dubins import path_sample
 
 from .geometry import get_utm_transforms
 from .units import ureg
 
 class Waypoint:
-    def __init__(self, latitude: float, longitude: float, heading: float, altitude: Union[ureg.Quantity, float, None] = None):
+    def __init__(self, latitude: float, longitude: float, heading: float, altitude: Union[ureg.Quantity, float, None] = None, name: str = None):
         """
         Initialize a Waypoint object.
 
@@ -20,12 +21,17 @@ class Waypoint:
             longitude (float): Longitude in decimal degrees.
             heading (float): Heading in degrees relative to North.
             altitude (Union[Quantity, float, None], optional): Altitude in meters or as a pint Quantity. Defaults to None.
+            name (str, optional): Name of the waypoint. Defaults to None.
         """
-        # Validate latitude and longitude
+        # Validate latitude and longitude and process geometry 
         if not (-90.0 <= latitude <= 90.0):
             raise ValueError("Latitude must be between -90 and 90 degrees")
         if not (-180.0 <= longitude <= 180.0):
             raise ValueError("Longitude must be between -180 and 180 degrees")
+        self.geometry = Point(longitude, latitude)
+
+        if isinstance(heading, float):
+            self.heading = heading
 
         # Validate and process altitude
         if altitude is None:
@@ -36,9 +42,12 @@ class Waypoint:
             self.altitude = altitude.to(ureg.meter).magnitude
         else:
             raise TypeError("Altitude must be None, a float (meters), or a pint Quantity with length units")
+        
+        if name is not None:
+            self.name = str(name)
+        else:
+            self.name = f"({self.geometry.y:.2f}, {self.geometry.x:.2f})"
 
-        self.point = Point(longitude, latitude)
-        self.heading = heading
 
 class DubinsPath:
     def __init__(self, start: Waypoint, end: Waypoint, speed: Union[ureg.Quantity, float], bank_angle: float, step_size: float):
@@ -78,32 +87,32 @@ class DubinsPath:
         Calculate the Dubins path and its properties.
         """
         # Convert bank angle to radians
-        bank_angle_rad = math.radians(self.bank_angle)
+        bank_angle_rad = np.radians(self.bank_angle)
 
         # Calculate the turn radius
         g = 9.8  # m/s^2
         turn_radius = (self.speed_mps ** 2) / (g * math.tan(bank_angle_rad))
 
         # Convert azimuths to radians
-        heading1 = math.radians(self.start.heading)
-        heading2 = math.radians(self.end.heading)
+        heading1 = np.radians(self.start.heading + 90.0)
+        heading2 = np.radians(self.end.heading + 90.0)
 
         # Calculate the geographic mean (midpoint)
-        midpoint_lat, midpoint_lon = meanm([self.start.point.y, self.end.point.y], [self.start.point.x, self.end.point.x])
+        midpoint_lat, midpoint_lon = meanm([self.start.geometry.y, self.end.geometry.y], [self.start.geometry.x, self.end.geometry.x])
 
         # Get UTM transforms
-        to_utm, from_utm = get_utm_transforms(midpoint_lat, midpoint_lon)
+        to_utm, from_utm = get_utm_transforms(Point(midpoint_lon, midpoint_lat))
 
         # Transform points to UTM
-        start_utm = transform(to_utm, self.start.point)
-        end_utm = transform(to_utm, self.end.point)
+        start_utm = transform(to_utm, self.start.geometry)
+        end_utm = transform(to_utm, self.end.geometry)
 
         # Define the start and end configurations
         q0 = (start_utm.x, start_utm.y, heading1)
         q1 = (end_utm.x, end_utm.y, heading2)
 
         # Generate the Dubins path
-        qs, _ = dubins.path_sample(q0, q1, turn_radius, self.step_size)
+        qs, _ = path_sample(q0, q1, turn_radius, self.step_size)
 
         # Convert sampled points back to geographic coordinates
         dubins_path_coords = [

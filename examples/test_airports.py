@@ -45,7 +45,7 @@ logging.info("GeoJSON for a subset of airports generated.")
 icao_code = "KLAX"  # Los Angeles International Airport
 try:
     lax = Airport(icao_code)
-    logging.info(f"Airport Details - Name: {lax.name}, ICAO: {lax.icao}, IATA: {lax.iata}, Country: {lax.iso_country}, Location: ({lax.longitude}, {lax.latitude})")
+    logging.info(f"Airport Details - Name: {lax.name}, ICAO: {lax.icao_code}, IATA: {lax.iata_code}, Country: {lax.iso_country}, Location: ({lax.longitude}, {lax.latitude})")
 except ValueError as e:
     logging.error(str(e))
 
