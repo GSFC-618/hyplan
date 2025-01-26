@@ -2,14 +2,16 @@ import numpy as np
 import math
 import random
 import logging
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, Union, List
 from shapely.affinity import affine_transform, translate
-from shapely.geometry import Point, Polygon, MultiPolygon
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from shapely.ops import triangulate, transform, unary_union
+from shapely.geometry.base import BaseGeometry
 from pyproj import CRS
 from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
 from pyproj import Transformer
+from pymap3d.lox import meanm
 
 
 # Wrap angles to -180 to 180 degrees
@@ -65,6 +67,51 @@ def _validate_polygon(polygon: Optional[Polygon]) -> None:
     logging.debug("Polygon validation passed.")
     return True
 
+
+def calculate_geographic_mean(geometry):
+    """
+    Calculate the geographic mean of coordinates from a Shapely geometry
+    or a list of Shapely geometries using pymap3d.lox.meanm.
+
+    Args:
+        geometry (LineString, Polygon, Point, or list): A single Shapely geometry or a list of Shapely geometries.
+
+    Returns:
+        Point: Geographic mean as a Shapely Point.
+    """
+    # Ensure input is a single geometry or a list of geometries
+    if isinstance(geometry, (LineString, Polygon, Point)):
+        geometries = [geometry]
+    elif isinstance(geometry, list) and all(isinstance(geom, (LineString, Polygon, Point)) for geom in geometry):
+        geometries = geometry
+    else:
+        raise TypeError("Input must be a Shapely geometry or a list of Shapely geometries.")
+
+    # Collect all coordinates from the geometries
+    coords = []
+    for geom in geometries:
+        if isinstance(geom, Point):
+            coords.append((geom.x, geom.y))
+        elif isinstance(geom, LineString):
+            coords.extend(list(geom.coords))
+        elif isinstance(geom, Polygon):
+            coords.extend(list(geom.exterior.coords))
+
+    if not coords:
+        raise ValueError("No valid coordinates found in the provided geometries.")
+
+    # Separate latitudes and longitudes
+    lats = [coord[1] for coord in coords]
+    lons = [coord[0] for coord in coords]
+
+    # Calculate the geographic mean
+    lat_mean, lon_mean = meanm(lats, lons)
+
+    # Return as a Shapely Point
+    return Point(lon_mean, lat_mean)
+
+
+
 def get_utm_crs(lon: float, lat: float) -> CRS:
     """
     Determine the UTM CRS for a given WGS84 coordinate using the area of interest (AOI).
@@ -89,12 +136,14 @@ def get_utm_crs(lon: float, lat: float) -> CRS:
     
     return CRS.from_epsg(utm_crs_list[0].code)
 
-def get_utm_transforms(geometry) -> Tuple[Callable, Callable]:
+
+
+def get_utm_transforms(geometry: Union[BaseGeometry, List[BaseGeometry]]) -> Tuple[Callable, Callable]:
     """
-    Get the UTM CRS and transformation functions to/from WGS84 for a Shapely geometry.
+    Get the UTM CRS and transformation functions to/from WGS84 for a Shapely geometry or a list of geometries.
 
     Args:
-        geometry (shapely.geometry.base.BaseGeometry): A Shapely geometry object. Must have a valid centroid.
+        geometry (BaseGeometry or list of BaseGeometry): A single Shapely geometry object or a list of geometries.
 
     Returns:
         Tuple[Callable, Callable]: Transformation functions:
@@ -102,22 +151,21 @@ def get_utm_transforms(geometry) -> Tuple[Callable, Callable]:
             - `utm_to_wgs84`: Function to transform coordinates from UTM to WGS84.
 
     Raises:
-        ValueError: If the geometry is invalid or has no valid centroid.
+        ValueError: If the geometry is invalid, empty, or has no valid centroid.
     """
-    if not geometry.is_valid:
-        raise ValueError("Invalid geometry provided.")
-    if geometry.is_empty:
-        raise ValueError("Empty geometry provided. Cannot calculate centroid.")
+    # Ensure the input is valid
+    if isinstance(geometry, list):
+        if not all(isinstance(geom, (Point, LineString, Polygon)) for geom in geometry):
+            raise TypeError("All elements in the list must be Shapely geometries.")
+    elif not isinstance(geometry, BaseGeometry):
+        raise TypeError("Input must be a Shapely geometry or a list of geometries.")
 
-    # Extract centroid coordinates
-    centroid = geometry.centroid
-    if centroid.is_empty:
-        raise ValueError("Geometry has no valid centroid.")
-
+    # Calculate the geographic mean
+    centroid = calculate_geographic_mean(geometry)
     lon, lat = centroid.x, centroid.y
 
+    # Determine UTM CRS based on the geographic mean
     try:
-        # Get UTM CRS based on the centroid
         utm_crs = get_utm_crs(lon, lat)
     except ValueError as e:
         raise ValueError(f"Failed to determine UTM CRS for centroid ({lon}, {lat}): {e}")
