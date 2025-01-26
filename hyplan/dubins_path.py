@@ -5,7 +5,6 @@ import math
 from shapely.geometry import Point, LineString
 from shapely.ops import transform
 from typing import Union
-from pymap3d.lox import meanm
 from dubins import path_sample
 
 from .geometry import get_utm_transforms
@@ -97,11 +96,8 @@ class DubinsPath:
         heading1 = np.radians(self.start.heading + 90.0)
         heading2 = np.radians(self.end.heading + 90.0)
 
-        # Calculate the geographic mean (midpoint)
-        midpoint_lat, midpoint_lon = meanm([self.start.geometry.y, self.end.geometry.y], [self.start.geometry.x, self.end.geometry.x])
-
         # Get UTM transforms
-        to_utm, from_utm = get_utm_transforms(Point(midpoint_lon, midpoint_lat))
+        to_utm, from_utm = get_utm_transforms([self.start.geometry, self.end.geometry])
 
         # Transform points to UTM
         start_utm = transform(to_utm, self.start.geometry)
