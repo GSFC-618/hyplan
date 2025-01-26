@@ -5,7 +5,7 @@ from shapely.geometry import Point
 from shapely.ops import nearest_points
 from typing import List, Union
 
-from .units import convert_distance
+from .units import convert_distance, ureg
 from .download import download_file
 from .geometry import haversine
 
@@ -55,9 +55,11 @@ class Airport:
         self._name = airport_data['name']
         self._iso_country = airport_data['iso_country']
         self._municipality = airport_data['municipality']
+        self._elevation = airport_data['elevation_ft'] * ureg.foot
+        self._elevation = self.elevation.to(ureg.meter) if self.elevation else None
 
     def __repr__(self):
-        return f"<Airport {self.icao} - {self.name}>"
+        return f"<Airport {self._icao} - {self._name}>"
 
     @property
     def longitude(self):
@@ -98,6 +100,12 @@ class Airport:
     def municipality(self):
         """Municipality of the airport."""
         return self._municipality
+    
+    @property
+    def elevation(self):
+        """Elevation of the airport in meters. Returns None if not available."""
+        return self._elevation
+
 
 
 def generate_geojson(filepath: str = "airports.geojson", icao_codes: Union[str, List[str]] = None) -> None:
@@ -171,7 +179,7 @@ def load_airports(
     df_airports.rename(columns={"latitude_deg": "latitude", "longitude_deg": "longitude"}, inplace=True)
     df_airports.set_index('ident', inplace=True)
 
-    columns_to_drop = ['id', 'elevation_ft', 'scheduled_service', 'local_code', 'gps_code',
+    columns_to_drop = ['id', 'scheduled_service', 'local_code', 'gps_code',
                        'home_link', 'wikipedia_link', 'keywords']
     df_airports.drop(columns_to_drop, axis=1, inplace=True)
 
@@ -261,6 +269,13 @@ def get_airports() -> gpd.GeoDataFrame:
     if gdf_airports is None:
         raise RuntimeError("Airports data has not been initialized. Please run initialize_data().")
     return gdf_airports
+
+def get_runways() -> pd.DataFrame:
+    """Get the globally initialized GeoDataFrame of airports."""
+    global df_runways
+    if df_runways is None:
+        raise RuntimeError("Runway data has not been initialized. Please run initialize_data().")
+    return df_runways
 
 def get_airport_details(icao_codes: Union[str, List[str]]) -> pd.DataFrame:
     """Get details of airports for given ICAO code(s)."""
