@@ -29,16 +29,18 @@ class Waypoint:
             raise ValueError("Longitude must be between -180 and 180 degrees")
         self.geometry = Point(longitude, latitude)
 
-        if isinstance(heading, float):
-            self.heading = heading
+        if isinstance(heading, (int, float)):
+            self.heading = float(heading)
+        else:
+            raise TypeError("Heading must be a float or an int")
 
         # Validate and process altitude
         if altitude is None:
             self.altitude = None
         elif isinstance(altitude, float):
-            self.altitude = altitude  # Assume meters if a float is provided
+            self.altitude = altitude * ureg.meter  # Assume meters if a float is provided
         elif hasattr(altitude, 'units') and altitude.check('[length]'):
-            self.altitude = altitude.to(ureg.meter).magnitude
+            self.altitude = altitude.to(ureg.meter)
         else:
             raise TypeError("Altitude must be None, a float (meters), or a pint Quantity with length units")
         
@@ -119,20 +121,22 @@ class DubinsPath:
         self._geometry = LineString([(lon, lat) for lat, lon in dubins_path_coords])
         self._length = self._calculate_length(qs)
     
-    def _calculate_length(self, qs) -> float:
+    def _calculate_length(self, qs) -> ureg.Quantity:
         """
         Calculate the length of the Dubins path directly from the sampled points using vectorized operations.
-    
+
         Args:
             qs (list): List of sampled points [(x1, y1, h1), (x2, y2, h2), ...].
-    
+
         Returns:
-            float: Total length of the path in meters.
+            Quantity: Total length of the path in meters.
         """
         coordinates = np.array([(x, y) for x, y, _ in qs])
         diffs = np.diff(coordinates, axis=0)
         distances = np.sqrt((diffs ** 2).sum(axis=1))
-        return distances.sum()
+        
+        return (distances.sum() * ureg.meter)  # Convert to pint.Quantity
+
 
     @property
     def geometry(self) -> LineString:
