@@ -7,7 +7,7 @@ from .dubins_path import Waypoint, DubinsPath
 class Aircraft:
     def __init__(
         self, type, tail_number, service_ceiling, approach_speed, best_rate_of_climb,
-        cruise_speed, range, endurance, operator, useful_payload, vx, vy,
+        cruise_speed, range, endurance, operator, max_bank_angle:float, useful_payload, vx, vy,
         roc_at_service_ceiling=100 * ureg.feet / ureg.minute,
         descent_rate=1500 * ureg.feet / ureg.minute
     ):
@@ -21,6 +21,7 @@ class Aircraft:
         self.endurance = endurance.to(ureg.hour)
         self.operator = operator
         self.useful_payload = useful_payload.to(ureg.pound)
+        self.max_bank_angle = max_bank_angle
         self.descent_rate = descent_rate
         self.vx = vx.to(ureg.knot)
         self.vy = vy.to(ureg.knot)
@@ -80,10 +81,10 @@ class Aircraft:
 
             # Cruise phase
             dubins_path = DubinsPath(
-                start=Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=0, altitude=airport_altitude),
+                start=Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading-90.0, altitude=airport_altitude),
                 end=waypoint,
                 speed=self.cruise_speed,
-                bank_angle=25,
+                bank_angle=self.max_bank_angle,
                 step_size=100
             )
             total_distance = dubins_path.length.to(ureg.nautical_mile)
@@ -129,7 +130,7 @@ class Aircraft:
                 start=waypoint,
                 end=airport_waypoint,
                 speed=self.cruise_speed,
-                bank_angle=25,
+                bank_angle=self.max_bank_angle,
                 step_size=100
             )
             total_distance = dubins_path.length.to(ureg.nautical_mile)
