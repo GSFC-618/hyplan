@@ -29,6 +29,9 @@ class Waypoint:
             raise ValueError("Longitude must be between -180 and 180 degrees")
         self.geometry = Point(longitude, latitude)
 
+        self.latitude = latitude
+        self.longitude = longitude
+
         if isinstance(heading, (int, float)):
             self.heading = float(heading)
         else:
