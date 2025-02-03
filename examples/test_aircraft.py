@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from shapely.geometry import LineString
 from hyplan.units import ureg
 from hyplan.airports import Airport, initialize_data
 from hyplan.dubins_path import Waypoint, DubinsPath
