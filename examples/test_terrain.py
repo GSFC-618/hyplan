@@ -124,9 +124,9 @@ print("Testing ray-terrain intersection function...")
 lat_start, lon_start = 34.25, -117.75  # Starting point (latitude, longitude)
 lat_end, lon_end = 34.50, -117.75  # Ending point (latitude, longitude)
 num_observers = 300
-h0 = 5000  # Altitude of observer (meters)
-az = 90  # Azimuth angle (degrees)
-tilt = 17  # Tilt angle (degrees)
+h0 = 5000.0  # Altitude of observer (meters)
+az = 90.0  # Azimuth angle (degrees)
+tilt = 17.0  # Tilt angle (degrees)
 precision = 10.0  # Precision of slant range sampling (meters)
 
 # Generate observer positions along a straight line

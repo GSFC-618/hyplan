@@ -12,6 +12,7 @@ from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
 from pyproj import Transformer
 from pymap3d.lox import meanm
+from pymap3d.vincenty import vdist
 
 
 # Wrap angles to -180 to 180 degrees
@@ -400,3 +401,60 @@ def buffer_polygon_along_azimuth(polygon: Polygon, along_track_distance: float, 
         raise ValueError(f"Failed to buffer polygon along azimuth: {e}")
 
     return buffered_polygon_wgs84
+
+def process_linestring(linestring):
+    """
+    Process a LineString containing WGS84 coordinates to compute latitudes, longitudes, 
+    azimuths, and cumulative along-track distances.
+
+    Parameters:
+        linestring (LineString): A shapely LineString containing WGS84 coordinates.
+
+    Returns:
+        tuple: A tuple containing:
+            - numpy.ndarray: Latitudes of the track points.
+            - numpy.ndarray: Longitudes of the track points.
+            - numpy.ndarray: Azimuths between consecutive points.
+            - numpy.ndarray: Cumulative along-track distances in meters.
+    """
+    if not isinstance(linestring, LineString):
+        raise ValueError("Input must be a LineString object.")
+
+    # Extract coordinates
+    coordinates = np.array(linestring.coords)
+    track_lat = coordinates[:, 1]
+    track_lon = coordinates[:, 0]
+
+    # Wrap longitude to the range [-180, 180]
+    track_lon = (track_lon + 180) % 360 - 180
+
+    # Calculate azimuths between consecutive track points
+    azimuths = []
+    distances = []
+
+    for i in range(len(track_lat) - 1):
+        distance, az12 = vdist(
+            track_lat[i], track_lon[i], track_lat[i + 1], track_lon[i + 1]
+        )
+        azimuths.append(az12)
+        distances.append(distance)
+
+    # Add reverse azimuth for the last point to match array sizes
+    if len(track_lat) > 1:
+        _, reverse_az = vdist(
+            track_lat[-1], track_lon[-1], track_lat[-2], track_lon[-2]
+        )
+        azimuths.append((reverse_az + 180) % 360)  # Reverse azimuth with normalization
+    else:
+        azimuths.append(0.0)  # Single point, azimuth is undefined
+
+    # Compute cumulative along-track distances
+    distances = np.array(distances)
+    along_track_distance = np.insert(np.cumsum(distances), 0, 0)
+
+    return (
+        np.array(track_lat),
+        np.array(track_lon),
+        np.array(azimuths),
+        along_track_distance,
+    )

@@ -8,6 +8,7 @@ from sunposition import sunpos
 
 from .flight_line import FlightLine
 from .sensors import LineScanner
+from .geometry import process_linestring
 
 def calculate_target_and_glint_vectorized(
     sensor_lat, sensor_lon, sensor_alt,
@@ -88,7 +89,7 @@ def compute_glint_vectorized(flight_line: FlightLine, sensor: LineScanner, obser
         GeoDataFrame: Results containing target locations and glint angles.
     """
     # Get track coordinates, altitude, and azimuth
-    latitudes, longitudes, azimuths, along_track_distance = flight_line.track()  # Get latitudes, longitudes, azimuths
+    latitudes, longitudes, azimuths, along_track_distance = process_linestring(flight_line.track())  # Get latitudes, longitudes, azimuths
     altitude = flight_line.altitude.magnitude  # Extract altitude magnitude
 
     # Define tilt angles from -half_angle to +half_angle in 1-degree increments

@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from hyplan.units import ureg
 from hyplan.flight_line import FlightLine
 from hyplan.sensors import AVIRIS3
-from hyplan.terrain import generate_demfile
 from hyplan.swath import generate_swath_polygon, calculate_swath_widths, export_polygon_to_kml
 
 # Initialize test parameters

@@ -6,6 +6,7 @@ import pymap3d.vincenty
 from .flight_line import FlightLine
 from .sensors import LineScanner
 from .terrain import ray_terrain_intersection
+from .geometry import process_linestring
 
 def generate_swath_polygon(
     flight_line: FlightLine,
@@ -31,14 +32,14 @@ def generate_swath_polygon(
     altitude = flight_line.altitude.magnitude
 
     # Interpolate points along the flight line
-    lats, lons, _, *_ = flight_line.track(precision=along_precision)
+    lats, lons, azimuths, *_ = process_linestring(flight_line.track(precision=along_precision))
 
     # Calculate the half-angle for port and starboard
     half_angle = sensor.half_angle.magnitude
 
     # Compute azimuths for port and starboard sides
-    az_port = (flight_line.az12.magnitude + 270) % 360
-    az_starboard = (flight_line.az12.magnitude + 90) % 360
+    az_port = (azimuths + 270.0) % 360.0
+    az_starboard = (azimuths + 90.0) % 360.0
 
     # Perform ray-terrain intersection for port side 
     port_lats, port_lons, _ = ray_terrain_intersection(

@@ -233,8 +233,8 @@ def ray_terrain_intersection(
     lat0: np.ndarray,
     lon0: np.ndarray,
     h0: float,
-    az: float,
-    tilt: float,
+    az: np.ndarray,
+    tilt: np.ndarray,
     precision: float = 10.0,
     dem_file: str = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -254,11 +254,20 @@ def ray_terrain_intersection(
     Returns:
         Tuple[np.ndarray, np.ndarray, np.ndarray]: (intersection_lats, intersection_lons, intersection_alts)
     """
+
+    # Ensure all inputs are arrays
+    lat0 = np.atleast_1d(lat0)
+    lon0 = np.atleast_1d(lon0)
+    az = np.atleast_1d(az)
+    tilt = np.atleast_1d(tilt)
+
     # Validate input
     if np.any((tilt < -90) | (tilt > 90)):
         raise ValueError("Tilt angles must be between -90 and 90 degrees.")
-    if not (0 <= az <= 360):
+    if np.any((az < 0) | (az > 360)):
         raise ValueError("Azimuth angle must be between 0 and 360 degrees.")
+    if np.any((tilt < -90.0) | (tilt > 90)):
+        raise ValueError("Tilt angle must be between -90 and 90 degrees.")
 
     # Compute slant range for ellipsoid intersection
     lat_ell, lon_ell, rng_ell = pymap3d.los.lookAtSpheroid(lat0, lon0, h0, az, tilt)
@@ -284,9 +293,11 @@ def ray_terrain_intersection(
     # Generate slant range sampling
     rs = np.arange(lower_bound.min(), upper_bound.max() + precision, precision)
 
+    tilt = tilt - 90.0  # Convert to elevation angle
+
     # Compute geodetic positions for all observer positions and slant ranges
     lats, lons, alts = pymap3d.aer.aer2geodetic(
-        az, tilt - 90.0, rs[:, np.newaxis], lat0[np.newaxis, :], lon0[np.newaxis, :], h0
+        az[np.newaxis,:], tilt[np.newaxis,:], rs[:, np.newaxis], lat0[np.newaxis, :], lon0[np.newaxis, :], h0
     )
 
     # Flatten for DEM query

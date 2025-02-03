@@ -9,6 +9,7 @@ import numpy as np
 
 from .units import ureg
 from .geometry import wrap_to_180
+from .dubins_path import Waypoint
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -86,7 +87,15 @@ class FlightLine:
     def az21(self) -> Quantity:
         _, az21 = pymap3d.vincenty.vdist(self.lat2, self.lon2, self.lat1, self.lon1)
         return ureg.Quantity(az21, "degree")
-
+    
+    @property
+    def waypoint1(self) -> Waypoint:
+        return Waypoint(latitude=self.lat1, longitude=self.lon1, heading=self.az12, altitude=self.altitude, name=self.site_name+"_start")
+    
+    @property
+    def waypoint2(self) -> Waypoint:
+        return Waypoint(latitude=self.lat2, longitude=self.lon2, heading=self.az21, altitude=self.altitude, name=self.site_name+"_end")
+    
     @classmethod
     def start_length_azimuth(
         cls,
@@ -181,15 +190,15 @@ class FlightLine:
         raise TypeError(f"Unexpected geometry type after clipping: {type(clipped_geometry)}")
 
 
-    def track(self, precision=100.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def track(self, precision=100.0) -> LineString:
         """
-        Interpolate points along the flight line.
+        Generate a LineString representing the flight line.
 
         Args:
             precision (float): Desired distance (in meters) between interpolated points.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Arrays of latitude, longitude, azimuths, and along-track distance.
+            LineString: A LineString object containing the interpolated track.
         """
         # Compute the number of points based on the length and precision
         num_points = int(np.ceil(self.length.to("meter").magnitude / precision)) + 1
@@ -202,30 +211,11 @@ class FlightLine:
         # Wrap longitude to the range [-180, 180]
         track_lon = wrap_to_180(track_lon)
 
-        # Calculate azimuths between consecutive track points
-        azimuths = []
-        for i in range(len(track_lat) - 1):
-            _, az12 = pymap3d.vincenty.vdist(
-                track_lat[i], track_lon[i], track_lat[i + 1], track_lon[i + 1]
-            )
-            azimuths.append(az12)
+        # Create and return the LineString
+        return LineString(zip(track_lon, track_lat))
 
-        # Add reverse azimuth for the last point to match array sizes
-        _, reverse_az = pymap3d.vincenty.vdist(
-            track_lat[-1], track_lon[-1], track_lat[-2], track_lon[-2]
-        )
-        azimuths.append((reverse_az + 180) % 360)  # Reverse azimuth with normalization
 
-        # Compute the pairwise distances between consecutive points
-        distances = np.array([
-            pymap3d.vincenty.vdist(track_lat[i], track_lon[i], track_lat[i + 1], track_lon[i + 1])[0]
-            for i in range(len(track_lat) - 1)
-        ])
 
-        # Compute cumulative along-track distances
-        along_track_distance = np.insert(np.cumsum(distances), 0, 0)
-
-        return np.array(track_lat), np.array(track_lon), np.array(azimuths), along_track_distance
 
 
     def reverse(self) -> "FlightLine":
