@@ -20,6 +20,9 @@ def wrap_to_180(lon):
     lon = np.mod(np.array(lon) + 180.0, 360.0) - 180.0
     return np.squeeze(lon)
 
+def wrap_to_360(angle):
+    return np.mod(np.array(angle), 360.0)
+
 def _validate_polygon(polygon: Optional[Polygon]) -> None:
     """
     Validate the input polygon and ensure it is a single, non-empty, valid Shapely Polygon.
