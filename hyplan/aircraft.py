@@ -16,7 +16,6 @@ class Aircraft:
         self.tail_number = tail_number
         self.service_ceiling = service_ceiling
         self.approach_speed = approach_speed
-        self.best_rate_of_climb = best_rate_of_climb
         self.cruise_speed = cruise_speed
         self.range = range.to(ureg.nautical_mile)
         self.endurance = endurance.to(ureg.hour)
@@ -26,6 +25,7 @@ class Aircraft:
         self.descent_rate = descent_rate
         self.vx = vx.to(ureg.knot)
         self.vy = vy.to(ureg.knot)
+        self.best_rate_of_climb = best_rate_of_climb
         self.roc_at_service_ceiling = roc_at_service_ceiling
 
     def rate_of_climb(self, altitude):
@@ -82,7 +82,7 @@ class Aircraft:
 
             # Cruise phase
             dubins_path = DubinsPath(
-                start=Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading-90.0, altitude=airport_altitude),
+                start=Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading, altitude=airport_altitude),
                 end=waypoint,
                 speed=self.cruise_speed,
                 bank_angle=self.max_bank_angle,
@@ -125,7 +125,7 @@ class Aircraft:
         with detailed altitude and time information for each phase.
         """
         try:
-            airport_waypoint = Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading+90.0, altitude=airport.elevation)
+            airport_waypoint = Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading, altitude=airport.elevation)
             dubins_path = DubinsPath(
                 start=waypoint,
                 end=airport_waypoint,
@@ -137,7 +137,7 @@ class Aircraft:
 
             # Cruise phase
             cruise_altitude = waypoint.altitude.to(ureg.feet)
-            approach_altitude = airport.elevation.to(ureg.feet) + 5_000 * ureg.feet
+            approach_altitude = min(airport.elevation.to(ureg.feet) + 5_000 * ureg.feet, cruise_altitude)
             descent_altitude = cruise_altitude - approach_altitude
             descent_distance = 3 * (descent_altitude.to(ureg.feet).magnitude / 1_000) * ureg.nautical_mile
             cruise_distance = max(0 * ureg.nautical_mile, total_distance - descent_distance)
@@ -258,20 +258,20 @@ class Aircraft:
                     "end_time": climb_time,
                 }
 
-            if cruise_time > 0:
-                phases["cruise"] = {
-                    "start_altitude": end_altitude,
-                    "end_altitude": end_altitude,
-                    "start_time": climb_time,
-                    "end_time": climb_time + cruise_time,
-                }
-
             if descent_time > 0:
                 phases["cruise_descent"] = {
                     "start_altitude": start_altitude,
                     "end_altitude": end_altitude,
-                    "start_time": climb_time + cruise_time,
-                    "end_time": total_time,
+                    "start_time": 0 * ureg.minute,
+                    "end_time": descent_time,
+                }
+
+            if cruise_time > 0:
+                phases["cruise"] = {
+                    "start_altitude": end_altitude,
+                    "end_altitude": end_altitude,
+                    "start_time": climb_time + descent_time,
+                    "end_time": climb_time + descent_time + cruise_time,
                 }
 
             return {

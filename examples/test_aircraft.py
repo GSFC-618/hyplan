@@ -1,6 +1,4 @@
 #%%
-
-import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -8,22 +6,31 @@ from hyplan.units import ureg
 from hyplan.airports import Airport, initialize_data
 from hyplan.dubins_path import Waypoint, DubinsPath
 from hyplan.aircraft import Aircraft
+from hyplan.flight_line import FlightLine
 
-initialize_data()  # Initialize airport data
-# Define example airport and waypoints
-example_airport = Airport(icao="KSBA")  # Fresno Yosemite International Airport
-waypoint_1 = Waypoint(
-    latitude=34.6928, longitude=-119.0406, heading=235.0, altitude=20000 * ureg.feet
+# Initialize airport data
+initialize_data()
+
+# Define example airport and flight line
+airport = Airport(icao="KSBA")  # Example airport: Santa Barbara Municipal
+flight_line = FlightLine.start_length_azimuth(
+    lat1=34.05,
+    lon1=-118.25,
+    length=ureg.Quantity(100000, "meter"),
+    az=45.0,
+    altitude=ureg.Quantity(20000, "feet"),
+    site_name="LA Northeast",
+    investigator="Dr. Smith"
 )
-waypoint_2 = Waypoint(
-    latitude=34.5786, longitude=-119.5, heading=200.0, altitude=20000 * ureg.feet
-)
+
+waypoint_1 = flight_line.waypoint1
+waypoint_2 = flight_line.waypoint2
 
 # Define an example aircraft
-example_aircraft = Aircraft(
+aircraft = Aircraft(
     type="Beechcraft King Air 200",
     tail_number="N53W",
-    service_ceiling=35_000 * ureg.feet,
+    service_ceiling=35000 * ureg.feet,
     approach_speed=103 * ureg.knot,
     best_rate_of_climb=2_450 * ureg.feet / ureg.minute,
     cruise_speed=260 * ureg.knot,
@@ -34,111 +41,87 @@ example_aircraft = Aircraft(
     descent_rate=1000 * ureg.feet / ureg.minute,
     vx=120 * ureg.knot,
     vy=135 * ureg.knot,
-    max_bank_angle=25.0
+    max_bank_angle=30.0
 )
 
-# Flight phase calculations
-takeoff_info = example_aircraft.time_to_takeoff(example_airport, waypoint_1)
-cruise_info = example_aircraft.time_to_cruise(waypoint_1, waypoint_2)
-return_info = example_aircraft.time_to_return(waypoint_2, example_airport)
+# Compute flight phases
+takeoff_info = aircraft.time_to_takeoff(airport, waypoint_1)
+cruise_info = aircraft.time_to_cruise(waypoint_1, waypoint_2)
+return_info = aircraft.time_to_return(waypoint_2, airport)
 
-# Extract coordinates using only DubinsPath
-def extract_coordinates(path_data):
-    if isinstance(path_data, DubinsPath):
-        return [(lat, lon) for lon, lat in path_data.geometry.coords]  # Ensure correct order
-    return []
+# Helper function to extract coordinates from DubinsPath
+def extract_coordinates(dubins_path):
+    coords = [(lat, lon) for lon, lat in dubins_path.geometry.coords]
+    return zip(*coords) if coords else ([], [])
 
-takeoff_coords = extract_coordinates(takeoff_info["dubins_path"])
-cruise_coords = extract_coordinates(cruise_info["dubins_path"])
-return_coords = extract_coordinates(return_info["dubins_path"])
+# Plot Ground Track
+def plot_ground_track(phases, title="Ground Track"):
+    plt.figure(figsize=(12, 7))
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.add_feature(cfeature.LAND, edgecolor='black', facecolor='lightgray')
+    ax.add_feature(cfeature.COASTLINE)
+    ax.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.5)
+    ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
 
-takeoff_lats, takeoff_lons = zip(*takeoff_coords) if takeoff_coords else ([], [])
-cruise_lats, cruise_lons = zip(*cruise_coords) if cruise_coords else ([], [])
-return_lats, return_lons = zip(*return_coords) if return_coords else ([], [])
+    # Plot phases
+    colors = {"Takeoff": "blue", "Cruise": "green", "Return": "red"}
+    for name, phase_info in phases.items():
+        lats, lons = extract_coordinates(phase_info["dubins_path"])
+        ax.plot(lons, lats, label=name, color=colors[name], linewidth=2, transform=ccrs.PlateCarree())
 
-# Convert to lists
-takeoff_lons, takeoff_lats = list(takeoff_lons), list(takeoff_lats)
-cruise_lons, cruise_lats = list(cruise_lons), list(cruise_lats)
-return_lons, return_lats = list(return_lons), list(return_lats)
+    # Plot airport and waypoints
+    ax.plot(airport.longitude, airport.latitude, marker="*", color="gold", markersize=15, label="Airport", transform=ccrs.PlateCarree())
+    ax.plot(waypoint_1.longitude, waypoint_1.latitude, marker="^", color="purple", markersize=10, label="Waypoint 1", transform=ccrs.PlateCarree())
+    ax.plot(waypoint_2.longitude, waypoint_2.latitude, marker="^", color="orange", markersize=10, label="Waypoint 2", transform=ccrs.PlateCarree())
 
-# Map extent calculation
-all_lons = takeoff_lons + return_lons + cruise_lons
-all_lats = takeoff_lats + return_lats + cruise_lats
+    plt.title(title)
+    plt.legend()
+    plt.show()
 
-if not all_lons or not all_lats or any(np.isnan(all_lons)) or any(np.isnan(all_lats)):
-    raise ValueError("No valid coordinates for plotting.")
+# Plot Altitude Trajectory
+def plot_altitude_trajectory(phases, title="Altitude Trajectory"):
+    plt.figure(figsize=(10, 5))
+    current_time = 0 * ureg.minute
 
-margin = 1  # Degrees of buffer around the flight path
-lon_min, lon_max = min(all_lons) - margin, max(all_lons) + margin
-lat_min, lat_max = min(all_lats) - margin, max(all_lats) + margin
+    for name, phase_info in phases.items():
+        for sub_phase_name, phase_data in phase_info["phases"].items():
+            start_alt = phase_data["start_altitude"].to("feet").magnitude
+            end_alt = phase_data["end_altitude"].to("feet").magnitude
+            duration = (phase_data["end_time"] - phase_data["start_time"]).to("minute").magnitude
 
-#%%
-# Plotting Ground Track
-plt.figure(figsize=(12, 7))
-ax = plt.axes(projection=ccrs.PlateCarree())
-ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+            # Ensure duration is treated as a pint.Quantity
+            duration = (phase_data["end_time"] - phase_data["start_time"]).to("minute")
 
-# Add map features
-ax.add_feature(cfeature.LAND, edgecolor='black', facecolor='lightgray')
-ax.add_feature(cfeature.COASTLINE)
-ax.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.5)
-ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
+            # Update the plot line to handle pint.Quantity
+            plt.plot(
+                [current_time.to("minute").magnitude, (current_time + duration).to("minute").magnitude],
+                [start_alt, end_alt],
+                label=f"{name} - {sub_phase_name}"
+            )
 
-# Airport and waypoint markers
-ax.plot(example_airport.longitude, example_airport.latitude, marker='*', color='gold', markersize=15, transform=ccrs.PlateCarree(), label='Airport')
-ax.plot(waypoint_1.longitude, waypoint_1.latitude, marker='^', color='purple', markersize=10, transform=ccrs.PlateCarree(), label='Waypoint 1')
-ax.plot(waypoint_2.longitude, waypoint_2.latitude, marker='^', color='darkorange', markersize=10, transform=ccrs.PlateCarree(), label='Waypoint 2')
+            # Increment current_time correctly
+            current_time += duration
 
-# Flight paths
-ax.plot(takeoff_lons, takeoff_lats, label="Takeoff", color="blue", linewidth=2, transform=ccrs.PlateCarree())
-ax.plot(cruise_lons, cruise_lats, label="Cruise", color="green", linewidth=2, transform=ccrs.PlateCarree())
-ax.plot(return_lons, return_lats, label="Return", color="red", linewidth=2, transform=ccrs.PlateCarree())
 
-plt.title("Ground Track Trajectory", fontsize=16)
-plt.legend(fontsize=12)
-plt.show()
+    plt.xlabel("Time (minutes)")
+    plt.ylabel("Altitude (feet)")
+    plt.title(title)
+    plt.legend()
+    plt.grid()
+    plt.show()
 
-#%%
-# Plotting Altitude vs. Time
-# Plotting Altitude vs. Time
-# Plotting Altitude vs. Time with Sequential Time Adjustment
-plt.figure(figsize=(10, 5))
 
-phases = {**takeoff_info["phases"], **cruise_info["phases"], **return_info["phases"]}
-colors = {"takeoff_climb": "blue", "takeoff_cruise": "cyan", "cruise": "green", "cruise_descent": "orange", "return_cruise": "purple", "return_descent": "red", "return_approach": "brown"}
+# Incremental plotting
+# 1. Takeoff only
+plot_ground_track({"Takeoff": takeoff_info}, "Ground Track: Takeoff Only")
+plot_altitude_trajectory({"Takeoff": takeoff_info}, "Altitude Trajectory: Takeoff Only")
 
-# Adjust times for sequential alignment
-adjusted_phases = {}
-current_time = 0 * ureg.minute  # Initialize time
+# 2. Takeoff and Cruise
+plot_ground_track({"Takeoff": takeoff_info, "Cruise": cruise_info}, "Ground Track: Takeoff and Cruise")
+# plot_altitude_trajectory({"Takeoff": takeoff_info, "Cruise": cruise_info}, "Altitude Trajectory: Takeoff and Cruise")
 
-for phase in ["takeoff_climb", "takeoff_cruise", "cruise", "return_cruise", "return_descent", "return_approach"]:
-    if phase in phases:
-        start_altitude = phases[phase]["start_altitude"]
-        end_altitude = phases[phase]["end_altitude"]
-        duration = phases[phase]["end_time"] - phases[phase]["start_time"]
-
-        adjusted_phases[phase] = {
-            "start_time": current_time,
-            "end_time": current_time + duration,
-            "start_altitude": start_altitude,
-            "end_altitude": end_altitude,
-        }
-        current_time += duration
-
-# Plot adjusted phases
-for phase, color in colors.items():
-    if phase in adjusted_phases:
-        plt.plot(
-            [adjusted_phases[phase]["start_time"].magnitude, adjusted_phases[phase]["end_time"].magnitude],
-            [adjusted_phases[phase]["start_altitude"].magnitude, adjusted_phases[phase]["end_altitude"].magnitude],
-            color=color, marker="o", label=phase
-        )
-
-plt.xlabel("Time (minutes)")
-plt.ylabel("Altitude (feet)")
-plt.title("Altitude vs. Time Trajectory")
-plt.legend()
-plt.grid(True)
-plt.show()
+# 3. Full Flight (Takeoff, Cruise, and Return)
+plot_ground_track({"Takeoff": takeoff_info, "Cruise": cruise_info, "Return": return_info}, "Ground Track: Full Flight")
+plot_altitude_trajectory({"Takeoff": takeoff_info, "Cruise": cruise_info, "Return": return_info}, "Altitude Trajectory: Full Flight")
 
 # %%

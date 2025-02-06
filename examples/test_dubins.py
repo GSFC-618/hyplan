@@ -2,18 +2,23 @@
 import matplotlib.pyplot as plt
 from hyplan.dubins_path import Waypoint, DubinsPath
 from hyplan.units import ureg
+import numpy as np
+from hyplan.geometry import wrap_to_360
 
 # Define waypoints
 waypoints = [
-    Waypoint(latitude=34.05, longitude=-118.25, heading=0.0, altitude=100 * ureg.meter, name = "Waypoint 1"),
-    Waypoint(latitude=34.10, longitude=-118.15, heading=45.0),
-    Waypoint(latitude=34.15, longitude=-118.05, heading=135.0, name = "Waypoint 3"),
-    Waypoint(latitude=34.20, longitude=-117.95, heading=0.0, name = "Waypoint 4"),
+    Waypoint(latitude=34.20, longitude=-117.95, heading=wrap_to_360(270.0), name = "Waypoint 1"),
+    Waypoint(latitude=34.20, longitude=-118.15, heading=wrap_to_360(270.0), name = "Waypoint 2"),
+    Waypoint(latitude=34.20, longitude=-118.35, heading=wrap_to_360(270.0), name = "Waypoint 3"),
+    Waypoint(latitude=34.05, longitude=-118.25, heading=wrap_to_360(180.0), altitude=100 * ureg.meter, name = "Waypoint 4"),
+    Waypoint(latitude=34.10, longitude=-118.15, heading=wrap_to_360(180.0)),
+    Waypoint(latitude=34.15, longitude=-118.05, heading=wrap_to_360(0.0), name = "Waypoint 6"),
+    Waypoint(latitude=34.20, longitude=-117.95, heading=wrap_to_360(270.0), name = "Waypoint 1")
 ]
 
 # Define parameters
 speed = 50.0  # Speed in m/s
-bank_angle = 5.0  # Bank angle in degrees
+bank_angle = 30.0  # Updated bank angle in degrees
 step_size = 10.0  # Step size in meters
 
 # Generate Dubins paths between consecutive waypoints
@@ -26,6 +31,9 @@ for i in range(len(waypoints) - 1):
         bank_angle=bank_angle,
         step_size=step_size
     )
+    print(f"Path {i + 1}: Start Heading={waypoints[i].heading}, End Heading={waypoints[i + 1].heading}")
+    print(f"Path {i + 1} Turn Radius: {(speed**2) / (9.8 * np.tan(np.radians(bank_angle))):.2f} meters")
+    print(f"Path {i + 1} Coordinates (first 5 points): {list(dubins_path.geometry.coords)[:5]}...")
     paths.append(dubins_path)
 
 # Plot the Dubins paths
@@ -47,4 +55,15 @@ plt.legend()
 plt.grid()
 plt.show()
 
-# %%
+# Debug plot for Waypoint 4 to Waypoint 5
+plt.figure()
+lons, lats = zip(*list(paths[3].geometry.coords))  # Path from Waypoint 4 to Waypoint 5
+plt.plot(lons, lats, label="Path 4")
+plt.scatter([waypoints[3].geometry.x, waypoints[4].geometry.x],
+            [waypoints[3].geometry.y, waypoints[4].geometry.y], color='red')
+plt.title("Debug Plot: Waypoint 4 to Waypoint 5")
+plt.legend()
+plt.grid()
+plt.show()
+
+# %%%
