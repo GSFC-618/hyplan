@@ -1,267 +1,291 @@
-from typing import Dict
-from pydantic import BaseModel
-from pydantic_pint import PydanticPintQuantity
-from pint import Quantity
+from typing import Dict, Type
 import numpy as np
-from typing import Annotated
-
+from pint import Quantity
 from .units import ureg
 
-class Sensor(BaseModel):
+class Sensor:
     """Base class to represent a generic sensor."""
-
-    name: str
+    def __init__(self, name: str):
+        self.name = name
 
     def __str__(self) -> str:
         return self.name
+    
+    def _validate_quantity(self, value: Quantity, expected_unit: Quantity) -> Quantity:
+        """Validates and converts a quantity to the expected unit."""
+        if not isinstance(value, Quantity):
+            raise TypeError(f"Expected a pint.Quantity for {expected_unit}, but got {type(value)}.")
+        return value.to(expected_unit)
 
 class LineScanner(Sensor):
     """Class to represent a line scanning imager."""
 
-    fov: Annotated[Quantity, PydanticPintQuantity("degree", ureg=ureg)]
-    ifov: Annotated[Quantity, PydanticPintQuantity("degree", ureg=ureg)]
-    across_track_pixels: int
-    frame_rate: Annotated[Quantity, PydanticPintQuantity("Hz", ureg=ureg)]
+    def __init__(
+        self,
+        name: str,
+        fov: float,  # Degrees (not a Quantity)
+        across_track_pixels: int,
+        frame_rate: Quantity  # Hz
+    ):
+        super().__init__(name)
+
+        # Validate FOV
+        if not isinstance(fov, (int, float)):
+            raise TypeError(f"fov must be a number, got {type(fov)}.")
+        self.fov = float(fov)
+
+        # Validate across_track_pixels
+        if not isinstance(across_track_pixels, int):
+            raise TypeError(f"across_track_pixels must be an integer, got {type(across_track_pixels)}.")
+        self.across_track_pixels = across_track_pixels
+
+        # Validate frame_rate
+        self.frame_rate = self._validate_quantity(frame_rate, ureg.Hz)
 
     @property
-    def half_angle(self) -> Annotated[Quantity, PydanticPintQuantity("degree")]:
-        """Calculate and return the half angle."""
+    def ifov(self) -> float:
+        """Calculate the cross-track Instantaneous Field of View (IFOV) in degrees."""
+        return self.fov / self.across_track_pixels
+
+    @property
+    def half_angle(self) -> float:
+        """Calculate and return the half angle in degrees."""
         return self.fov / 2.0
 
     @property
-    def frame_period(self) -> Annotated[Quantity, PydanticPintQuantity("s")]:
-        """Calculate and return the frame period."""
+    def frame_period(self) -> Quantity:
+        """Calculate and return the frame period in seconds."""
         return (1.0 / self.frame_rate).to(ureg.s)
 
-    def swath_width_at(
-        self, altitude: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Annotated[Quantity, PydanticPintQuantity("m")]:
+    def swath_width(self, altitude: Quantity) -> Quantity:
         """Calculate swath width (m) for a given altitude."""
+        altitude = self._validate_quantity(altitude, ureg.meter)
         return 2 * altitude * np.tan(np.radians(self.fov / 2))
 
-    def alt_for_pixel_size_nadir(
-        self, px_size: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Annotated[Quantity, PydanticPintQuantity("m")]:
-        """Calculate altitude (m) for a given pixel size (m) at nadir."""
-        return px_size / (2 * np.tan(np.radians(self.ifov / 2)))
+    def ground_sample_distance(self, altitude: Quantity, mode: str = "nadir") -> Quantity:
+        """Calculate the ground sample distance (GSD) for a given altitude."""
+        altitude = self._validate_quantity(altitude, ureg.meter)
 
-    def alt_for_pixel_size(
-        self, px_size: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Annotated[Quantity, PydanticPintQuantity("m")]:
-        """Calculate altitude (m) for an average pixel size (m)."""
-        return (
-            self.across_track_pixels * px_size / (2 * np.tan(np.radians(self.fov / 2)))
-        )
+        if mode == "nadir":
+            return 2 * altitude * np.tan(np.radians(self.ifov / 2))
 
-    def pixel_size_at(
-        self, altitude: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Annotated[Quantity, PydanticPintQuantity("m")]:
-        """Calculate average pixel size (m) for a given altitude (m)."""
-        return self.swath_width_at(altitude) / self.across_track_pixels
+        elif mode == "average":
+            return self.swath_width(altitude) / self.across_track_pixels
 
-    def pixel_size_at_nadir(
-        self, altitude: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Annotated[Quantity, PydanticPintQuantity("m")]:
-        """Calculate pixel size (m) at nadir for a given altitude."""
-        return 2 * altitude * np.tan(np.radians(self.ifov / 2))
+        elif mode == "edge":
+            edge_ifov = self.fov / 2.0 / (self.across_track_pixels / 2.0)
+            return 2 * altitude * np.tan(np.radians(edge_ifov / 2))
 
-    def critical_ground_speed(
-        self,
-        altitude: Annotated[Quantity, PydanticPintQuantity("m")],
-        along_track_sampling: float = 1,
-    ) -> Annotated[Quantity, PydanticPintQuantity("m/s")]:
-        """Calculate the maximum ground speed (m/s) at which spectrometer can move to achieve a specified along track sampling rate."""
-        return self.pixel_size_at_nadir(altitude) / (
-            self.frame_period * along_track_sampling
-        )
+        else:
+            return 2 * altitude * np.tan(np.radians(self.ifov / 2))
 
+    def altitude_for_ground_sample_distance(self, gsd: Quantity, mode: str = "nadir") -> Quantity:
+        """Calculate the required altitude for a given ground sample distance (GSD)."""
+        gsd = self._validate_quantity(gsd, ureg.meter)
 
-class FrameCamera(Sensor):
-    """Class to represent a frame camera."""
+        if mode == "nadir":
+            return gsd / (2 * np.tan(np.radians(self.ifov / 2)))
 
-    sensor_width: Annotated[Quantity, PydanticPintQuantity("mm", ureg=ureg)]
-    sensor_height: Annotated[Quantity, PydanticPintQuantity("mm", ureg=ureg)]
-    focal_length: Annotated[Quantity, PydanticPintQuantity("mm", ureg=ureg)]
-    resolution_x: int
-    resolution_y: int
-    frame_rate: Annotated[Quantity, PydanticPintQuantity("Hz", ureg=ureg)]
-    f_speed: float
+        elif mode == "average":
+            return (self.across_track_pixels * gsd) / (2 * np.tan(np.radians(self.fov / 2)))
 
-    @property
-    def fov_x(self) -> Annotated[Quantity, PydanticPintQuantity("degree")]:
-        """Calculate horizontal Field of View (FoV)."""
-        return 2 * np.degrees(np.arctan((self.sensor_width / (2 * self.focal_length)).magnitude))
+        elif mode == "edge":
+            edge_ifov = self.fov / 2.0 / (self.across_track_pixels / 2.0)
+            return gsd / (2 * np.tan(np.radians(edge_ifov / 2)))
 
-    @property
-    def fov_y(self) -> Annotated[Quantity, PydanticPintQuantity("degree")]:
-        """Calculate vertical Field of View (FoV)."""
-        return 2 * np.degrees(np.arctan((self.sensor_height / (2 * self.focal_length)).magnitude))
+        else:
+            return gsd / (2 * np.tan(np.radians(self.ifov / 2)))
 
-    def pixel_size_at(
-        self, altitude: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Dict[str, Annotated[Quantity, PydanticPintQuantity("m")]]:
-        """Calculate pixel sizes (m) for a given altitude."""
-        return {
-            "x": (2 * altitude * np.tan(np.radians(self.fov_x / 2)) / self.resolution_x),
-            "y": (2 * altitude * np.tan(np.radians(self.fov_y / 2)) / self.resolution_y),
-        }
-
-    def footprint_at(
-        self, altitude: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Dict[str, Annotated[Quantity, PydanticPintQuantity("m")]]:
-        """Calculate the footprint dimensions (m) for a given altitude."""
-        return {
-            "width": 2 * altitude * np.tan(np.radians(self.fov_x / 2)),
-            "height": 2 * altitude * np.tan(np.radians(self.fov_y / 2)),
-        }
-
-    def critical_ground_speed(
-        self, altitude: Annotated[Quantity, PydanticPintQuantity("m")]
-    ) -> Annotated[Quantity, PydanticPintQuantity("m/s")]:
+    def critical_ground_speed(self, altitude: Quantity, along_track_sampling: float = 1.0) -> Quantity:
         """
-        Calculate the maximum ground speed (m/s) to maintain proper along-track sampling.
+        Calculate the maximum allowable aircraft ground speed (m/s) to maintain proper along-track sampling.
 
         Args:
-            altitude (Quantity): Altitude of the camera in meters.
+            altitude (Quantity): Altitude of the sensor in meters.
+            along_track_sampling (float): The oversampling factor (default = 1.0).
 
         Returns:
             Quantity: Maximum allowable ground speed in meters per second.
         """
-        pixel_size = self.pixel_size_at(altitude)["y"]  # Along-track GSD
-        frame_period = (1 / self.frame_rate).to(ureg.s)
-        return pixel_size / frame_period
+        altitude = self._validate_quantity(altitude, ureg.meter)
+        return self.ground_sample_distance(altitude, mode="nadir") / (self.frame_period * along_track_sampling)
+
+    def along_track_pixel_size(self, aircraft_speed: Quantity, along_track_sampling: float = 1.0) -> Quantity:
+        """
+        Calculate the along-track pixel size for a given aircraft speed and oversampling rate.
+
+        Args:
+            aircraft_speed (Quantity): Speed of the aircraft in m/s.
+            oversampling_rate (float): Oversampling factor (default = 1.0).
+
+        Returns:
+            Quantity: Along-track pixel size in meters.
+        """
+        aircraft_speed = self._validate_quantity(aircraft_speed, ureg.meter / ureg.second)
+        return aircraft_speed * self.frame_period / along_track_sampling
+
 
 
 
 class AVIRISClassic(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="AVIRIS Classic",
-            fov="34 degree",
-            ifov="0.0572958 degree",
+            fov=34.0,
             across_track_pixels=677,
-            frame_rate="100 Hz",
-            **kwargs
+            frame_rate=100 * ureg.Hz
         )
-
 
 class AVIRISNextGen(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="AVIRIS Next Gen",
-            fov="36.0 degree",
-            ifov="0.0572958 degree",
+            fov=36.0,
             across_track_pixels=600,
-            frame_rate="100 Hz",
-            **kwargs
+            frame_rate=100 * ureg.Hz
         )
-
 
 class AVIRIS3(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="AVIRIS 3",
-            fov="40.2 degree",
-            ifov="0.031799 degree",
+            fov=40.2,
             across_track_pixels=1240,
-            frame_rate="216 Hz",
-            **kwargs
+            frame_rate=216 * ureg.Hz
         )
-
 
 class AVIRIS4(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="AVIRIS 4",
-            fov="39.5 degree",
-            ifov="0.03183869172 degree",
+            fov=39.5,
             across_track_pixels=1240,
-            frame_rate="215 Hz",
-            **kwargs
+            frame_rate=215 * ureg.Hz
         )
-
 
 class HyTES(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="HyTES",
-            fov="50 degree",
-            ifov="0.0977 degree",
+            fov=50.0,
             across_track_pixels=512,
-            frame_rate="36 Hz",
-            **kwargs
+            frame_rate=36 * ureg.Hz
         )
-
 
 class PRISM(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="PRISM",
-            fov="30.7 degree",
-            ifov="0.050534 degree",
+            fov=30.7,
             across_track_pixels=608,
-            frame_rate="176 Hz",
-            **kwargs
+            frame_rate=176 * ureg.Hz
         )
-
 
 class MASTER(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="MASTER",
-            fov="85.92 degree",
-            ifov="0.143239 degree",
+            fov=85.92,
             across_track_pixels=716,
-            frame_rate="25 Hz",
-            **kwargs
+            frame_rate=25 * ureg.Hz
         )
-
 
 class GLiHT_VNIR(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="G-LiHT VNIR",
-            fov="64.0 degree",  # FOV in degrees
-            ifov="0.03997984903 degree",  # IFOV in degrees
-            across_track_pixels=1600,  # Across-track pixels
-            frame_rate="250 Hz",  # Frame rate in Hz
-            **kwargs
+            fov=64.0,
+            across_track_pixels=1600,
+            frame_rate=250 * ureg.Hz
         )
-
 
 class GLiHT_Thermal(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="G-LiHT Thermal",
-            fov="42.6 degree",  # FOV in degrees
-            ifov="0.054087216 degree",  # IFOV in degrees
-            across_track_pixels=640,  # Across-track pixels
-            frame_rate="50 Hz",  # Frame rate in Hz
-            **kwargs
+            fov=42.6,
+            across_track_pixels=640,
+            frame_rate=50 * ureg.Hz
         )
-
 
 class GLiHT_SIF(LineScanner):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             name="G-LiHT SIF",
-            fov="23.5 degree",  # FOV in degrees
-            ifov="0.1415206 degree",  # IFOV in degrees
-            across_track_pixels=1600,  # Across-track pixels
-            frame_rate="37.6 Hz",  # Frame rate in Hz
-            **kwargs
+            fov=23.5,
+            across_track_pixels=1600,
+            frame_rate=37.6 * ureg.Hz
         )
 
 
-class CFIS(LineScanner):
-    def __init__(self, **kwargs):
+class GCAS_UV_Vis(LineScanner):
+    def __init__(self):
         super().__init__(
-            name="CFIS",
-            fov="11.46 degree",  # FOV in degrees
-            ifov="0.04068 degree",  # IFOV in degrees
-            across_track_pixels=256,  # Across-track pixels
-            frame_rate="6 Hz",  # Frame rate in Hz
-            **kwargs
+            name="GCAS UV-Vis Spectrometer",
+            fov=41.0,
+            across_track_pixels=1024,
+            frame_rate=12.0 * ureg.Hz
         )
 
+class GCAS_VNIR(LineScanner):
+    def __init__(self):
+        super().__init__(
+            name="GCAS Visible Near-Infrared (VNIR) Spectrometer",
+            fov=70.0,
+            across_track_pixels=1024,
+            frame_rate=12.0* ureg.Hz
+        )
 
+class eMAS(LineScanner):
+    def __init__(self):
+        super().__init__(
+            name="eMAS",
+            fov=85.92,  # degrees
+            across_track_pixels=716,
+            frame_rate=6.25 * ureg.Hz
+        )
+
+class PICARD(LineScanner):
+    def __init__(self):
+        super().__init__(
+            name="PICARD",
+            fov=50.0,  # degrees
+            across_track_pixels=412,  # Specific pixel count not provided
+            frame_rate=100 * ureg.Hz  # Specific frame rate not provided
+        )
+
+def create_sensor(sensor_type: str) -> Sensor:
+    """
+    Factory function to create and return an instance of a sensor.
+
+    Args:
+        sensor_type (str): The name of the sensor class to instantiate. 
+                           Must be one of the keys in SENSOR_REGISTRY.
+
+    Returns:
+        Sensor: An instance of the requested sensor type.
+
+    Raises:
+        ValueError: If the specified sensor_type is not found in SENSOR_REGISTRY.
+    """
+    if sensor_type not in SENSOR_REGISTRY:
+        raise ValueError(f"Unknown sensor type: {sensor_type}")
+    return SENSOR_REGISTRY[sensor_type]()  # ✅ Ensure class is instantiated!
+
+
+SENSOR_REGISTRY: Dict[str, Type[LineScanner]] = {
+    "AVIRISClassic": AVIRISClassic,
+    "AVIRISNextGen": AVIRISNextGen,
+    "AVIRIS3": AVIRIS3,
+    "AVIRIS4": AVIRIS4,
+    "HyTES": HyTES,
+    "PRISM": PRISM,
+    "MASTER": MASTER,
+    "GLiHT_VNIR": GLiHT_VNIR,
+    "GLiHT_Thermal": GLiHT_Thermal,
+    "GLiHT_SIF": GLiHT_SIF,
+    "GCAS_UV_Vis": GCAS_UV_Vis,
+    "GCAS_VNIR": GCAS_VNIR,
+    "eMAS": eMAS,
+    "PICARD": PICARD
+}

@@ -35,7 +35,7 @@ def generate_swath_polygon(
     lats, lons, azimuths, *_ = process_linestring(flight_line.track(precision=along_precision))
 
     # Calculate the half-angle for port and starboard
-    half_angle = sensor.half_angle.magnitude
+    half_angle = sensor.half_angle
 
     # Compute azimuths for port and starboard sides
     az_port = (azimuths + 270.0) % 360.0

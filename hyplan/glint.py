@@ -93,7 +93,7 @@ def compute_glint_vectorized(flight_line: FlightLine, sensor: LineScanner, obser
     altitude = flight_line.altitude.magnitude  # Extract altitude magnitude
 
     # Define tilt angles from -half_angle to +half_angle in 1-degree increments
-    half_angle = sensor.half_angle.magnitude  # Extract half angle from sensor
+    half_angle = sensor.half_angle  # Extract half angle from sensor
     tilt_angles = np.arange(-half_angle, half_angle + 1, 1)  # Shape: (T,)
 
     # Repeat azimuths for all tilt angles

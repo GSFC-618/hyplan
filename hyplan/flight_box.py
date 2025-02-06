@@ -137,11 +137,11 @@ def box_around_center_line(
     )
 
 
-    if not hasattr(instrument, "swath_width_at") or not callable(instrument.swath_width_at):
+    if not hasattr(instrument, "swath_width") or not callable(instrument.swath_width):
         raise ValueError("Instrument must have a callable method `swath_width_at(altitude)`.")
 
     # Compute swath spacing and number of lines
-    swath = instrument.swath_width_at(altitude)
+    swath = instrument.swath_width(altitude)
     if swath <= 0:
         raise ValueError(f"Invalid swath width {swath}. Must be positive.")
 
