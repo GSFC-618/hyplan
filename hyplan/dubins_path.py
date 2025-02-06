@@ -4,11 +4,12 @@ import numpy as np
 import math
 from shapely.geometry import Point, LineString
 from shapely.ops import transform
-from typing import Union
+from typing import Union, Dict
 from dubins import path_sample
 
-from .geometry import get_utm_transforms
+from .geometry import get_utm_transforms, wrap_to_360
 from .units import ureg
+
 
 class Waypoint:
     def __init__(self, latitude: float, longitude: float, heading: float, altitude: Union[ureg.Quantity, float, None] = None, name: str = None):
@@ -33,7 +34,7 @@ class Waypoint:
         self.longitude = longitude
 
         if isinstance(heading, (int, float)):
-            self.heading = float(heading)
+            self.heading = wrap_to_360(float(heading))
         else:
             raise TypeError("Heading must be a float or an int")
 
@@ -51,6 +52,15 @@ class Waypoint:
             self.name = str(name)
         else:
             self.name = f"({self.geometry.y:.2f}, {self.geometry.x:.2f})"
+
+    def to_dict(self) -> Dict:
+        return {
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "heading": self.heading,
+            "altitude": self.altitude,
+            "name": self.name
+        }
 
 
 class DubinsPath:
@@ -98,8 +108,8 @@ class DubinsPath:
         turn_radius = (self.speed_mps ** 2) / (g * math.tan(bank_angle_rad))
 
         # Convert azimuths to radians
-        heading1 = np.radians(self.start.heading + 90.0)
-        heading2 = np.radians(self.end.heading + 90.0)
+        heading1 = -np.radians(self.start.heading - 90.0)
+        heading2 = -np.radians(self.end.heading  - 90.0)
 
         # Get UTM transforms
         to_utm, from_utm = get_utm_transforms([self.start.geometry, self.end.geometry])
@@ -160,3 +170,18 @@ class DubinsPath:
             float: Length of the path in meters.
         """
         return self._length
+    
+
+    def to_dict(self) -> Dict:
+        return {
+            "geometry": self.geometry,
+            "start_lat": self.start.latitude,
+            "start_lon": self.start.longitude,
+            "end_lat": self.end.latitude,
+            "end_lon": self.end.longitude,
+            "start_altitude": self.start.altitude.to(ureg.meter).magnitude,
+            "end_altitude": self.end.altitude.to(ureg.meter).magnitude,
+            "start_heading": self.start.heading,
+            "end_heading": self.end.heading,
+            "distance": self.length.to(ureg.nautical_mile).magnitude
+        }
