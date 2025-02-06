@@ -3,30 +3,105 @@ import logging
 from .units import ureg
 from .airports import Airport
 from .dubins_path import Waypoint, DubinsPath
-from pymap3d.vincenty import vdist, track2
+from pint import Quantity
 
 class Aircraft:
+    """
+    A class representing an aircraft with performance and operational parameters.
+    """
+
     def __init__(
-        self, type, tail_number, service_ceiling, approach_speed, best_rate_of_climb,
-        cruise_speed, range, endurance, operator, max_bank_angle:float, useful_payload, vx, vy,
-        roc_at_service_ceiling=100 * ureg.feet / ureg.minute,
-        descent_rate=1500 * ureg.feet / ureg.minute
+        self,
+        type: str,  # aircraft model
+        tail_number: str, # unique identifier
+        service_ceiling: Quantity,  # feet
+        approach_speed: Quantity,  # knots
+        best_rate_of_climb: Quantity,  # feet per minute
+        cruise_speed: Quantity,  # knots
+        range: Quantity,  # nautical miles
+        endurance: Quantity,  # hours
+        operator: str, # organization
+        max_bank_angle: float,  # degrees
+        useful_payload: Quantity,  # pounds
+        vx: Quantity,  # knots
+        vy: Quantity,  # knots
+        roc_at_service_ceiling: Quantity,  # feet per minute
+        descent_rate: Quantity  # feet per minute
     ):
+        """
+        Initializes an Aircraft object with performance parameters.
+
+        Args:
+            type (str): Aircraft model or name.
+            tail_number (str): Aircraft tail number or unique identifier.
+            service_ceiling (Quantity): Maximum operational altitude (feet).
+            approach_speed (Quantity): Landing approach speed (knots).
+            best_rate_of_climb (Quantity): Maximum rate of climb (feet per minute).
+            cruise_speed (Quantity): Typical cruise speed (knots).
+            range (Quantity): Maximum flight range (nautical miles).
+            endurance (Quantity): Maximum flight duration (hours).
+            operator (str): Organization that operates the aircraft.
+            max_bank_angle (float): Maximum allowable bank angle (degrees).
+            useful_payload (Quantity): Maximum payload capacity (pounds).
+            vx (Quantity): Best angle-of-climb speed (knots).
+            vy (Quantity): Best rate-of-climb speed (knots).
+            roc_at_service_ceiling (Quantity): Rate of climb at max altitude (feet per minute).
+            descent_rate (Quantity): Standard rate of descent (feet per minute).
+
+        Raises:
+            TypeError: If any input has an incorrect type.
+            ValueError: If an input value cannot be converted to the expected unit.
+        """
+
+        # **Validation: Ensure correct types**
+        if not isinstance(type, str):
+            raise TypeError("Aircraft type must be a string.")
+        if not isinstance(tail_number, str):
+            raise TypeError("Tail number must be a string.")
+        if not isinstance(operator, str):
+            raise TypeError("Operator must be a string.")
+        if not isinstance(max_bank_angle, (int, float)):
+            raise TypeError("Max bank angle must be a float or int.")
+
+        # **Automatic Unit Conversion**
+        self.service_ceiling = self._convert_to_unit(service_ceiling, ureg.feet)
+        self.approach_speed = self._convert_to_unit(approach_speed, ureg.knot)
+        self.best_rate_of_climb = self._convert_to_unit(best_rate_of_climb, ureg.feet / ureg.minute)
+        self.cruise_speed = self._convert_to_unit(cruise_speed, ureg.knot)
+        self.range = self._convert_to_unit(range, ureg.nautical_mile)
+        self.endurance = self._convert_to_unit(endurance, ureg.hour)
+        self.useful_payload = self._convert_to_unit(useful_payload, ureg.pound)
+        self.vx = self._convert_to_unit(vx, ureg.knot)
+        self.vy = self._convert_to_unit(vy, ureg.knot)
+        self.roc_at_service_ceiling = self._convert_to_unit(roc_at_service_ceiling, ureg.feet / ureg.minute)
+        self.descent_rate = self._convert_to_unit(descent_rate, ureg.feet / ureg.minute)
+
+        # Assign validated string and numeric values
         self.type = type
         self.tail_number = tail_number
-        self.service_ceiling = service_ceiling
-        self.approach_speed = approach_speed
-        self.cruise_speed = cruise_speed
-        self.range = range.to(ureg.nautical_mile)
-        self.endurance = endurance.to(ureg.hour)
         self.operator = operator
-        self.useful_payload = useful_payload.to(ureg.pound)
-        self.max_bank_angle = max_bank_angle
-        self.descent_rate = descent_rate
-        self.vx = vx.to(ureg.knot)
-        self.vy = vy.to(ureg.knot)
-        self.best_rate_of_climb = best_rate_of_climb
-        self.roc_at_service_ceiling = roc_at_service_ceiling
+        self.max_bank_angle = float(max_bank_angle)  # Ensure float type
+
+    @staticmethod
+    def _convert_to_unit(value: Quantity, expected_unit: Quantity) -> Quantity:
+        """
+        Converts the input value to the expected unit.
+
+        Args:
+            value (Quantity): The input quantity with a unit.
+            expected_unit (Quantity): The expected unit for conversion.
+
+        Returns:
+            Quantity: The value converted to the expected unit.
+
+        Raises:
+            TypeError: If the input is not a Quantity.
+        """
+        if not isinstance(value, Quantity):
+            raise TypeError(f"Expected a pint.Quantity for {expected_unit}, but got {type(value)}.")
+
+        # Convert to the expected unit
+        return value.to(expected_unit)
 
     def rate_of_climb(self, altitude):
         """
@@ -283,3 +358,206 @@ class Aircraft:
         except Exception as e:
             logging.error(f"Error in time_to_cruise: {e}")
             raise
+
+#%% Aircraft Definitions
+# 🚀 NASA Aircraft
+class NASA_ER2(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="ER-2",
+            tail_number="NASA 806",
+            service_ceiling=70000 * ureg.feet,
+            approach_speed=130 * ureg.knot,
+            best_rate_of_climb=5000 * ureg.feet / ureg.minute,
+            cruise_speed=410 * ureg.knot,
+            range=5000 * ureg.nautical_mile,
+            endurance=8 * ureg.hour,
+            operator="NASA AFRC",
+            max_bank_angle=30.0,
+            useful_payload=2900 * ureg.pound,
+            vx=140 * ureg.knot,
+            vy=160 * ureg.knot,
+            roc_at_service_ceiling=500.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class NASA_GIII(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="Gulfstream III",
+            tail_number="NASA 520",
+            service_ceiling=45000 * ureg.feet,
+            approach_speed=140 * ureg.knot,
+            best_rate_of_climb=4000 * ureg.feet / ureg.minute,
+            cruise_speed=459 * ureg.knot,
+            range=3767 * ureg.nautical_mile,
+            endurance=7.5 * ureg.hour,
+            operator="NASA LaRC",
+            max_bank_angle=30.0,
+            useful_payload=2610 * ureg.pound,
+            vx=140 * ureg.knot,
+            vy=160 * ureg.knot,
+            roc_at_service_ceiling=500.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class NASA_GIV(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="Gulfstream IV",
+            tail_number="NASA 817",
+            service_ceiling=45000 * ureg.feet,
+            approach_speed=140 * ureg.knot,
+            best_rate_of_climb=4000 * ureg.feet / ureg.minute,
+            cruise_speed=459 * ureg.knot,
+            range=5130 * ureg.nautical_mile,
+            endurance=7.5 * ureg.hour,
+            operator="NASA AFRC",
+            max_bank_angle=30.0,
+            useful_payload=5610 * ureg.pound,
+            vx=150 * ureg.knot,
+            vy=170 * ureg.knot,
+            roc_at_service_ceiling=500.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class NASA_C20A(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="C-20A",
+            tail_number="NASA 502",
+            service_ceiling=45000 * ureg.feet,
+            approach_speed=140 * ureg.knot,
+            best_rate_of_climb=3500 * ureg.feet / ureg.minute,
+            cruise_speed=460 * ureg.knot,
+            range=3400 * ureg.nautical_mile,
+            endurance=6 * ureg.hour,
+            operator="NASA AFRC",
+            max_bank_angle=30.0,
+            useful_payload=2500 * ureg.pound,
+            vx=150 * ureg.knot,
+            vy=170 * ureg.knot,
+            roc_at_service_ceiling=500.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class NASA_P3(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="P-3 Orion",
+            tail_number="NASA 426",
+            service_ceiling=32000 * ureg.feet,
+            approach_speed=130 * ureg.knot,
+            best_rate_of_climb=3500 * ureg.feet / ureg.minute,
+            cruise_speed=405 * ureg.knot,
+            range=3800 * ureg.nautical_mile,
+            endurance=12 * ureg.hour,
+            operator="NASA LaRC",
+            max_bank_angle=30.0,
+            useful_payload=18000 * ureg.pound,
+            vx=135 * ureg.knot,
+            vy=155 * ureg.knot,
+            roc_at_service_ceiling=100.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class NASA_WB57(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="WB-57",
+            tail_number="NASA 927",
+            service_ceiling=60000 * ureg.feet,
+            approach_speed=130 * ureg.knot,
+            best_rate_of_climb=5000 * ureg.feet / ureg.minute,
+            cruise_speed=410 * ureg.knot,
+            range=2500 * ureg.nautical_mile,
+            endurance=6.5 * ureg.hour,
+            operator="NASA JSC",
+            max_bank_angle=30.0,
+            useful_payload=8800 * ureg.pound,
+            vx=140 * ureg.knot,
+            vy=160 * ureg.knot,
+            roc_at_service_ceiling=500 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class NASA_B777(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="B777",
+            tail_number="Unknown",
+            service_ceiling=43000 * ureg.feet,
+            approach_speed=150 * ureg.knot,
+            best_rate_of_climb=2500 * ureg.feet / ureg.minute,
+            cruise_speed=487 * ureg.knot,
+            range=9000 * ureg.nautical_mile,
+            endurance=18 * ureg.hour,
+            operator="NASA LaRC",
+            max_bank_angle=30.0,
+            useful_payload=75000 * ureg.pound,
+            vx=160 * ureg.knot,
+            vy=180 * ureg.knot,
+            roc_at_service_ceiling=500 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+# 🚀 Dynamic Aviation Aircraft
+class DynamicAviation_DH8(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="Dash 8",
+            tail_number="Unknown",
+            service_ceiling=25000 * ureg.feet,
+            approach_speed=110 * ureg.knot,
+            best_rate_of_climb=2000 * ureg.feet / ureg.minute,
+            cruise_speed=243 * ureg.knot,
+            range=950 * ureg.nautical_mile,
+            endurance=5 * ureg.hour,
+            operator="Dynamic Aviation",
+            max_bank_angle=30.0,
+            useful_payload=15000 * ureg.pound,
+            vx=110 * ureg.knot,
+            vy=130 * ureg.knot,
+            roc_at_service_ceiling=100.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class DynamicAviation_A90(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="King Air 90",
+            tail_number="Unknown",
+            service_ceiling=30000 * ureg.feet,
+            approach_speed=110 * ureg.knot,
+            best_rate_of_climb=1800 * ureg.feet / ureg.minute,
+            cruise_speed=230 * ureg.knot,
+            range=1500 * ureg.nautical_mile,
+            endurance=6 * ureg.hour,
+            operator="Dynamic Aviation",
+            max_bank_angle=30.0,
+            useful_payload=2950 * ureg.pound,
+            vx=120 * ureg.knot,
+            vy=140 * ureg.knot,
+            roc_at_service_ceiling=100.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )
+
+class DynamicAviation_B200(Aircraft):
+    def __init__(self):
+        super().__init__(
+            type="King Air 200",
+            tail_number="Unknown",
+            service_ceiling=35000 * ureg.feet,
+            approach_speed=120 * ureg.knot,
+            best_rate_of_climb=2000 * ureg.feet / ureg.minute,
+            cruise_speed=270 * ureg.knot,
+            range=1632 * ureg.nautical_mile,
+            endurance=6 * ureg.hour,  # Estimated
+            operator="Dynamic Aviation",
+            max_bank_angle=30.0,
+            useful_payload=4250 * ureg.pound,
+            vx=120 * ureg.knot,
+            vy=140 * ureg.knot,
+            roc_at_service_ceiling=100.0 * ureg.feet / ureg.minute,
+            descent_rate=1500 * ureg.feet / ureg.minute
+        )

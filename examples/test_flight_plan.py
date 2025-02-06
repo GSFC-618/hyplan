@@ -47,7 +47,7 @@ flight_sequence = [flight_line_1, waypoint_3, flight_line_2, waypoint_1, waypoin
 #%%
 
 # Compute flight plan
-flight_plan_df = compute_flight_plan(example_aircraft, flight_sequence, departure_airport, return_airport)
+flight_plan_df = compute_flight_plan(aircraft, flight_sequence, departure_airport, return_airport)
 
 # Display results
 print(flight_plan_df)
