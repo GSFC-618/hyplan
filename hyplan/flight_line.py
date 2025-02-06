@@ -90,11 +90,12 @@ class FlightLine:
     
     @property
     def waypoint1(self) -> Waypoint:
-        return Waypoint(latitude=self.lat1, longitude=self.lon1, heading=self.az12, altitude=self.altitude, name=self.site_name+"_start")
+        return Waypoint(latitude=self.lat1, longitude=self.lon1, heading=self.az12.magnitude, altitude=self.altitude, name=self.site_name+"_start")
     
     @property
     def waypoint2(self) -> Waypoint:
-        return Waypoint(latitude=self.lat2, longitude=self.lon2, heading=self.az21, altitude=self.altitude, name=self.site_name+"_end")
+        heading = (self.az21.magnitude + 180.0) % 360.0
+        return Waypoint(latitude=self.lat2, longitude=self.lon2, heading=heading, altitude=self.altitude, name=self.site_name+"_end")
     
     @classmethod
     def start_length_azimuth(
