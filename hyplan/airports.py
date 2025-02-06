@@ -32,7 +32,7 @@ class Airport:
     def __init__(self, icao: str):
         global gdf_airports
         if gdf_airports is None:
-            raise RuntimeError("Airports data has not been initialized. Please run initialize_data().")
+            initialize_data()
         if icao not in gdf_airports.index:
             raise ValueError(f"Airport ICAO code {icao} not found in the dataset.")
 
