@@ -1,7 +1,7 @@
 #%%
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from hyplan.aircraft import Aircraft
+from hyplan.aircraft import DynamicAviation_B200
 from hyplan.airports import Airport
 from hyplan.dubins_path import Waypoint
 from hyplan.flight_line import FlightLine
@@ -9,38 +9,24 @@ from hyplan.flight_plan import compute_flight_plan, plot_flight_plan, plot_altit
 from hyplan.units import ureg
 
 # Define example aircraft
-example_aircraft = Aircraft(
-    type="Beechcraft King Air 200",
-    tail_number="N53W",
-    service_ceiling=35_000 * ureg.feet,
-    approach_speed=103 * ureg.knot,
-    best_rate_of_climb=2_450 * ureg.feet / ureg.minute,
-    cruise_speed=260 * ureg.knot,
-    range=1_580 * ureg.nautical_mile,
-    endurance=6 * ureg.hour,
-    operator="Dynamic Aviation",
-    useful_payload=4_250 * ureg.pound,
-    descent_rate=1000 * ureg.feet / ureg.minute,
-    vx=120 * ureg.knot,
-    vy=135 * ureg.knot,
-    max_bank_angle=30.0
-)
+aircraft = DynamicAviation_B200()
 
 
 # Define airports
 departure_airport = Airport("KLAX")
-return_airport = Airport("KLAX")
+return_airport = Airport("KSBA")
 
 # Define waypoints
 waypoint_1 = Waypoint(latitude=34.05, longitude=-118.25, heading=45.0, altitude=20000 * ureg.feet, name="WP1")
 waypoint_2 = Waypoint(latitude=34.10, longitude=-118.20, heading=90.0, altitude=20000 * ureg.feet, name="WP2")
+waypoint_3 = Waypoint(latitude=34.25, longitude=-118.00, heading=230.0, altitude=4000 * ureg.feet, name="WP2")
 
 # Define flight lines
 flight_line_1 = FlightLine.start_length_azimuth(
     lat1=34.10, lon1=-118.20,
     length=ureg.Quantity(50000, "meter"),
     az=0.0,
-    altitude=ureg.Quantity(35000, "feet"),
+    altitude=ureg.Quantity(15000, "feet"),
     site_name="Test Flight Line 1"
 )
 
@@ -55,7 +41,7 @@ flight_line_2 = FlightLine.start_length_azimuth(
 )
 
 # Define flight sequence
-flight_sequence = [flight_line_1, flight_line_2, waypoint_1, waypoint_2]
+flight_sequence = [flight_line_1, waypoint_3, flight_line_2, waypoint_1, waypoint_2]
 
 
 #%%

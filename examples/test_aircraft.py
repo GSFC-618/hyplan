@@ -5,7 +5,7 @@ import cartopy.feature as cfeature
 from hyplan.units import ureg
 from hyplan.airports import Airport, initialize_data
 from hyplan.dubins_path import Waypoint, DubinsPath
-from hyplan.aircraft import Aircraft
+from hyplan.aircraft import DynamicAviation_B200
 from hyplan.flight_line import FlightLine
 
 # Initialize airport data
@@ -27,22 +27,7 @@ waypoint_1 = flight_line.waypoint1
 waypoint_2 = flight_line.waypoint2
 
 # Define an example aircraft
-aircraft = Aircraft(
-    type="Beechcraft King Air 200",
-    tail_number="N53W",
-    service_ceiling=35000 * ureg.feet,
-    approach_speed=103 * ureg.knot,
-    best_rate_of_climb=2_450 * ureg.feet / ureg.minute,
-    cruise_speed=260 * ureg.knot,
-    range=1_580 * ureg.nautical_mile,
-    endurance=6 * ureg.hour,
-    operator="Dynamic Aviation",
-    useful_payload=4_250 * ureg.pound,
-    descent_rate=1000 * ureg.feet / ureg.minute,
-    vx=120 * ureg.knot,
-    vy=135 * ureg.knot,
-    max_bank_angle=30.0
-)
+aircraft = DynamicAviation_B200()
 
 # Compute flight phases
 takeoff_info = aircraft.time_to_takeoff(airport, waypoint_1)

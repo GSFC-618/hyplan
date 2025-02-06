@@ -11,15 +11,15 @@ waypoints = [
     Waypoint(latitude=34.20, longitude=-118.15, heading=wrap_to_360(270.0), name = "Waypoint 2"),
     Waypoint(latitude=34.20, longitude=-118.35, heading=wrap_to_360(270.0), name = "Waypoint 3"),
     Waypoint(latitude=34.05, longitude=-118.25, heading=wrap_to_360(180.0), altitude=100 * ureg.meter, name = "Waypoint 4"),
-    Waypoint(latitude=34.10, longitude=-118.15, heading=wrap_to_360(180.0)),
+    Waypoint(latitude=34.10, longitude=-118.15, heading=wrap_to_360(180.0), name = "Waypoint 5"),
     Waypoint(latitude=34.15, longitude=-118.05, heading=wrap_to_360(0.0), name = "Waypoint 6"),
     Waypoint(latitude=34.20, longitude=-117.95, heading=wrap_to_360(270.0), name = "Waypoint 1")
 ]
 
 # Define parameters
-speed = 50.0  # Speed in m/s
+speed = 100.0  # Speed in m/s
 bank_angle = 30.0  # Updated bank angle in degrees
-step_size = 10.0  # Step size in meters
+step_size = 100.0  # Step size in meters
 
 # Generate Dubins paths between consecutive waypoints
 paths = []
@@ -55,15 +55,5 @@ plt.legend()
 plt.grid()
 plt.show()
 
-# Debug plot for Waypoint 4 to Waypoint 5
-plt.figure()
-lons, lats = zip(*list(paths[3].geometry.coords))  # Path from Waypoint 4 to Waypoint 5
-plt.plot(lons, lats, label="Path 4")
-plt.scatter([waypoints[3].geometry.x, waypoints[4].geometry.x],
-            [waypoints[3].geometry.y, waypoints[4].geometry.y], color='red')
-plt.title("Debug Plot: Waypoint 4 to Waypoint 5")
-plt.legend()
-plt.grid()
-plt.show()
 
 # %%%
