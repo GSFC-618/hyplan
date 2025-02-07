@@ -7,8 +7,7 @@ from hyplan.flight_line import FlightLine
 from hyplan.sensors import AVIRIS3
 from hyplan.glint import calculate_target_and_glint_vectorized, compute_glint_vectorized
 from hyplan.units import ureg
-from shapely.geometry import Polygon
-from hyplan.swath import generate_swath_polygon
+
 
 
 #%% Example Inputs for calculate_target_and_glint_vectorized
