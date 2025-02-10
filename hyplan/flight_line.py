@@ -329,7 +329,7 @@ class FlightLine:
             return pymap3d.vincenty.vreckon(lat, lon, offset.to("meter").magnitude, azimuth)
 
         new_lat1, new_lon1 = compute_offset(self.lat1, self.lon1, offset_start, self.az12.magnitude)
-        new_lat2, new_lon2 = compute_offset(self.lat2, self.lon2, offset_end, self.az21.magnitude)
+        new_lat2, new_lon2 = compute_offset(self.lat2, self.lon2, offset_end, wrap_to_180(180.0 + self.az21.magnitude))
 
         new_lon1, new_lon2 = wrap_to_180(new_lon1), wrap_to_180(new_lon2)
         new_lat1, new_lon1 = round(new_lat1, 6), round(new_lon1, 6)

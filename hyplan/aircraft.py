@@ -155,9 +155,10 @@ class Aircraft:
             # Climb phase
             climb_time, climb_distance = self._climb(airport_altitude, waypoint_altitude, true_air_speed=self.vy)
 
+            airport_waypoint = Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading+90.0, altitude=airport_altitude)
             # Cruise phase
             dubins_path = DubinsPath(
-                start=Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading, altitude=airport_altitude),
+                start=airport_waypoint,
                 end=waypoint,
                 speed=self.cruise_speed,
                 bank_angle=self.max_bank_angle,
@@ -176,14 +177,18 @@ class Aircraft:
                     "takeoff_climb": {
                         "start_altitude": airport_altitude,
                         "end_altitude": waypoint_altitude,
+                        "start_heading": airport_waypoint.heading,
                         "start_time": 0 * ureg.minute,
                         "end_time": climb_time,
+                        "distance": climb_distance
                     },
                     "takeoff_cruise": {
                         "start_altitude": waypoint_altitude,
                         "end_altitude": waypoint_altitude,
+                        "start_heading": airport_waypoint.heading,
                         "start_time": climb_time,
                         "end_time": total_time,
+                        "distance": cruise_distance
                     },
                 },
                 "dubins_path": dubins_path
@@ -200,7 +205,7 @@ class Aircraft:
         with detailed altitude and time information for each phase.
         """
         try:
-            airport_waypoint = Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading, altitude=airport.elevation)
+            airport_waypoint = Waypoint(latitude=airport.latitude, longitude=airport.longitude, heading=waypoint.heading+90.0, altitude=airport.elevation)
             dubins_path = DubinsPath(
                 start=waypoint,
                 end=airport_waypoint,
@@ -240,18 +245,24 @@ class Aircraft:
                         "end_altitude": cruise_altitude,
                         "start_time": 0 * ureg.minute,
                         "end_time": cruise_time,
+                        "end_heading": airport_waypoint.heading,
+                        "distance": cruise_distance
                     },
                     "return_descent": {
                         "start_altitude": cruise_altitude,
                         "end_altitude": approach_altitude,
                         "start_time": cruise_time,
                         "end_time": cruise_time + descent_time,
+                        "end_heading": airport_waypoint.heading,
+                        "distance": descent_distance_actual
                     },
                     "return_approach": {
                         "start_altitude": approach_altitude,
                         "end_altitude": airport.elevation.to(ureg.feet),
                         "start_time": cruise_time + descent_time,
                         "end_time": total_time,
+                        "end_heading": airport_waypoint.heading,
+                        "distance": if_to_faf_distance + faf_to_runway_distance
                     },
                 },
                 "dubins_path": dubins_path
@@ -331,6 +342,7 @@ class Aircraft:
                     "end_altitude": end_altitude,
                     "start_time": 0 * ureg.minute,
                     "end_time": climb_time,
+                    "distance": climb_distance
                 }
 
             if descent_time > 0:
@@ -339,6 +351,7 @@ class Aircraft:
                     "end_altitude": end_altitude,
                     "start_time": 0 * ureg.minute,
                     "end_time": descent_time,
+                    "distance": descent_distance
                 }
 
             if cruise_time > 0:
@@ -347,6 +360,7 @@ class Aircraft:
                     "end_altitude": end_altitude,
                     "start_time": climb_time + descent_time,
                     "end_time": climb_time + descent_time + cruise_time,
+                    "distance": cruise_distance
                 }
 
             return {
@@ -550,7 +564,7 @@ class DynamicAviation_B200(Aircraft):
             service_ceiling=35000 * ureg.feet,
             approach_speed=120 * ureg.knot,
             best_rate_of_climb=2000 * ureg.feet / ureg.minute,
-            cruise_speed=270 * ureg.knot,
+            cruise_speed=250 * ureg.knot,
             range=1632 * ureg.nautical_mile,
             endurance=6 * ureg.hour,  # Estimated
             operator="Dynamic Aviation",
