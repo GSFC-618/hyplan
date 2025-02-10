@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sunposition import sunpos
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+
 
 def solar_threshold_times(latitude, longitude, start_date, end_date, thresholds, timezone_offset=0):
     """
@@ -90,3 +92,111 @@ def solar_threshold_times(latitude, longitude, start_date, end_date, thresholds,
         columns = ['Date', f'Rise_{lower}', f'Set_{lower}']
 
     return pd.DataFrame(results, columns=columns)
+
+
+def solar_azimuth(latitude, longitude, dt, elevation=0):
+    """
+    Return the solar azimuth (in degrees) at a given latitude, longitude, and datetime.
+    
+    Args:
+        latitude (float): Latitude of the location.
+        longitude (float): Longitude of the location.
+        dt (datetime): The datetime for which to calculate the solar azimuth. This should be in UTC.
+        elevation (float, optional): Elevation to use in the sunpos calculation (default 0).
+    
+    Returns:
+        float: Solar azimuth in degrees.
+    """
+    ts = pd.DatetimeIndex([dt], tz='UTC')
+    azimuth, zenith, *_ = sunpos(ts, latitude, longitude, elevation=elevation)
+    return azimuth[0]
+
+
+def solar_position_increments(latitude, longitude, date, min_elevation, timezone_offset=0, increment='10min'):
+    """
+    Return the solar azimuth and solar elevation at user-specified increments for a given date and location,
+    but only for times when the solar elevation exceeds the specified minimum.
+    
+    Args:
+        latitude (float): Latitude of the location.
+        longitude (float): Longitude of the location.
+        date (str or datetime.date): Date in 'YYYY-MM-DD' format or as a date object.
+        min_elevation (float): Minimum solar elevation (in degrees) required to include the time.
+        timezone_offset (int, optional): Timezone offset from UTC in hours (e.g., -8 for PST). Default is 0.
+        increment (str, optional): Frequency increment for sampling times (e.g., '10min'). Default is '10min'.
+    
+    Returns:
+        pandas.DataFrame: DataFrame with columns:
+            - 'Time': Local time (HH:MM:SS),
+            - 'Solar Azimuth': Solar azimuth in degrees,
+            - 'Solar Elevation': Solar elevation in degrees.
+    """
+    # Convert date to a datetime object at midnight.
+    if isinstance(date, str):
+        date_dt = datetime.strptime(date, '%Y-%m-%d')
+    elif isinstance(date, datetime):
+        date_dt = date
+    else:
+        # Assume it's a datetime.date
+        date_dt = datetime.combine(date, datetime.min.time())
+    
+    # Define the start and end of the day in UTC.
+    start_datetime = datetime.combine(date_dt.date(), datetime.min.time())
+    end_datetime = start_datetime + timedelta(days=1)
+    
+    # Create a DateTimeIndex in UTC at the specified increments.
+    # Subtract one increment from the end to avoid including the next day's midnight.
+    timestamps_utc = pd.date_range(start=start_datetime,
+                                   end=end_datetime - pd.Timedelta(increment),
+                                   freq=increment,
+                                   tz='UTC')
+    
+    # Convert UTC timestamps to local time using the provided timezone offset.
+    local_timestamps = timestamps_utc + pd.Timedelta(hours=timezone_offset)
+    
+    # Compute solar positions using the UTC timestamps.
+    # The sunpos function returns (azimuth, zenith, ...). Solar elevation = 90 - zenith.
+    azimuth, zenith, *_ = sunpos(timestamps_utc, latitude, longitude, elevation=0)
+    solar_elevation = 90 - zenith
+    
+    # Only keep times when the solar elevation exceeds the specified threshold.
+    valid = solar_elevation > min_elevation
+    
+    df = pd.DataFrame({
+        'Time': local_timestamps[valid].strftime('%H:%M:%S'),
+        'Azimuth': azimuth[valid],
+        'Elevation': solar_elevation[valid]
+    })
+    
+    return df
+
+def plot_solar_positions(df_positions):
+    """
+    Plot the solar azimuth and elevation for a given day.
+    
+    Args:
+        df_positions (pd.DataFrame): DataFrame containing the 'Solar Azimuth', 'Time', and 'Elevation' columns.
+    """
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    ax1.plot(df_positions['Time'], df_positions['Elevation'], label='Solar Elevation', color='tab:blue')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Solar Elevation', color='tab:blue')
+    ax1.tick_params(axis='y', labelcolor='tab:blue')
+    ax1.legend(loc='upper left')
+    ax1.grid(True)
+
+    # Rotate x-axis labels and set the frequency of the labels
+    plt.xticks(rotation=45)
+    ax1.xaxis.set_major_locator(plt.MaxNLocator(nbins=10))
+
+    # Create a second y-axis
+    ax2 = ax1.twinx()
+    ax2.plot(df_positions['Time'], df_positions['Azimuth'], label='Azimuth', color='tab:orange')
+    ax2.set_ylabel('Azimuth', color='tab:orange')
+    ax2.tick_params(axis='y', labelcolor='tab:orange')
+    ax2.legend(loc='upper right')
+
+    plt.title('Solar Azimuth and Elevation Plot')
+    plt.show()
+
