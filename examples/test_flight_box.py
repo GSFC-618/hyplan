@@ -3,8 +3,7 @@ import logging
 from shapely.geometry import Polygon
 from hyplan.flight_box import (
     box_around_center_line,
-    box_around_minimum_rectangle,
-    box_around_rotated_rectangle
+    box_around_polygon
 )
 from hyplan.units import ureg
 from hyplan.sensors import AVIRIS3
@@ -104,7 +103,7 @@ plot_flight_lines_and_swaths(
 
 #%% Test box_around_minimum_rectangle
 logging.info("Testing box_around_minimum_rectangle...")
-min_rect_lines = box_around_minimum_rectangle(
+min_rect_lines = box_around_polygon(
     instrument=instrument,
     altitude=altitude,
     polygon=polygon,
@@ -125,7 +124,7 @@ plot_flight_lines_and_swaths(
 
 #%% Test box_around_rotated_rectangle
 logging.info("Testing box_around_rotated_rectangle...")
-rotated_rect_lines = box_around_rotated_rectangle(
+rotated_rect_lines = box_around_polygon(
     instrument=instrument,
     altitude=altitude,
     polygon=polygon,

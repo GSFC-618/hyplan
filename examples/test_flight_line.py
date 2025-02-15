@@ -31,7 +31,7 @@ def plot_flight_lines(title, flight_lines, polygons=None):
     if polygons:
         for polygon in polygons:
             x, y = polygon.exterior.xy
-            ax.plot(x, y, linestyle="--", color="red", label="Clipping Polygon")
+            ax.plot(x, y, linestyle="--")
 
     ax.legend()
     plt.grid()

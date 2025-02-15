@@ -1,4 +1,3 @@
-import logging
 from shapely.geometry import LineString, Polygon, MultiPolygon, MultiLineString
 from pint import Quantity
 from typing import Optional, List, Dict, Union, Tuple
@@ -6,6 +5,7 @@ import pymap3d
 import pymap3d.vincenty
 import geopandas as gpd
 import numpy as np
+import logging
 
 from .units import ureg
 from .geometry import wrap_to_180

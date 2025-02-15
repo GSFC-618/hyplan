@@ -1,6 +1,5 @@
 #%%
 from datetime import datetime
-import matplotlib.pyplot as plt
 from hyplan.sun import solar_threshold_times, solar_azimuth, solar_position_increments, plot_solar_positions
 
 lat = 9.615     # Example: Coastal Ocean off of Jaco, Costa Rica
@@ -30,3 +29,5 @@ print(df_positions.to_markdown())
 
 plot_solar_positions(df_positions)
 
+
+# %%
