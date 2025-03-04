@@ -137,7 +137,7 @@ def box_around_center_line(
     )
 
     if not hasattr(instrument, "swath_width") or not callable(instrument.swath_width):
-        raise ValueError("Instrument must have a callable method `swath_width_at(altitude)`.")
+        raise ValueError("Instrument must have a callable method `swath_width(altitude)`.")
 
     # Compute swath spacing and number of lines
     swath = instrument.swath_width(altitude)
@@ -213,7 +213,7 @@ def box_around_polygon(
     - A rotated rectangle at a specified azimuth (if `azimuth` is given)
     
     Args:
-        instrument (object): Object with `swath_width_at(altitude: Quantity) -> Quantity`
+        instrument (object): Object with `swath_width(altitude: Quantity) -> Quantity`
             to compute swath width at a given altitude.
         altitude (ureg.Quantity): Altitude for the flight lines.
         polygon (Polygon): Input polygon to generate flight lines within.

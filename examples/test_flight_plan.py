@@ -12,8 +12,8 @@ from hyplan.units import ureg
 aircraft = DynamicAviation_B200()
 
 # Define airports
-departure_airport = Airport("KBUR")
-return_airport = Airport("KSBA")
+departure_airport = Airport("KSBA")
+return_airport = Airport("KBUR")
 
 # Define waypoints
 waypoint_1 = Waypoint(latitude=34.05, longitude=-118.25, heading=45.0, altitude=20000 * ureg.feet, name="WP1")
@@ -22,7 +22,7 @@ waypoint_3 = Waypoint(latitude=34.25, longitude=-118.00, heading=230.0, altitude
 
 # Define flight lines
 flight_line_1 = FlightLine.start_length_azimuth(
-    lat1=34.10, lon1=-118.20,
+    lat1=34.50, lon1=-118.20,
     length=ureg.Quantity(50000, "meter"),
     az=90.0,
     altitude=ureg.Quantity(15000, "feet"),
@@ -30,7 +30,7 @@ flight_line_1 = FlightLine.start_length_azimuth(
 )
 
 flight_line_2 = FlightLine.start_length_azimuth(
-    lat1=34.15, lon1=-118.10,
+    lat1=34.65, lon1=-118.10,
     length=ureg.Quantity(70000, "meter"),
     az=125.0,
     altitude=ureg.Quantity(18000, "feet"),

@@ -227,3 +227,8 @@ print("Imported GeoJSON:")
 print(imported_gdf)
 
 # %%
+from leafmap import leafmap
+
+m = leafmap.Map()
+m.edit_vector("flight_lines.geojson")
+# %%
