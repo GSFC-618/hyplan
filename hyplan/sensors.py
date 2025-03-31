@@ -222,7 +222,7 @@ class GCAS_UV_Vis(LineScanner):
     def __init__(self):
         super().__init__(
             name="GCAS UV-Vis Spectrometer",
-            fov=41.0,
+            fov=45.0,
             across_track_pixels=1024,
             frame_rate=12.0 * ureg.Hz
         )
